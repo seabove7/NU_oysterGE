@@ -1,0 +1,248 @@
+---
+title: "Ocean acidification and boring sponge on *Crassostrea virginica* GE"
+date: "*Last run on `r format(Sys.time(), '%d %B %Y')`*"
+output: 
+  html_document:
+    theme: simplex
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+    code_folding: hide
+---
+
+---
+
+<style>
+  h2{color: #DC7633 !important}
+  h1{color: #5499C7 !important}
+  body{background-color: white !important}
+</style>
+
+<style>
+.list-group-item.active, .list-group-item.active:hover, .list-group-item.active:focus {
+    color: #212F3D;
+    background-color: #EDBB99;
+    font-weight: bold;}
+a {
+    color: #5499C7;}
+.nav-tabs > li.active > a, .nav-tabs > li.active > a:hover, .nav-tabs > li.active > a:focus {
+    color: #DC7633;}
+body {
+    font-family: "Open Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-size: 13px;
+    line-height: 1.42857143;
+    color: #212F3D;}
+</style>
+
+---
+
+```{r setup, include = FALSE} 
+
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+options(knitr.kable.NA = '')
+
+library("knitr")
+
+date <- Sys.Date() # For saving with the current date
+set.seed(7) # set seed
+
+
+## Setting standard theme for ggplot for all plots:
+theme_bove <- function(base_size = 14) {
+  theme_bw(base_size = base_size) %+replace%
+    theme(
+      # remove the gridlines
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      # remove formatting on background
+      strip.background = element_blank(),
+      panel.background = element_rect(fill = "transparent"),
+      plot.background = element_rect(fill = "transparent", colour = NA),
+      # modify legend theme
+      legend.position = "none",
+      legend.background = element_rect(fill = "transparent", colour = "transparent"),
+      legend.key = element_rect(fill = "transparent", colour = "transparent")
+    )
+}
+
+
+## Source the custom functions file:
+#source("Code/CustomFunctions.R")
+
+```
+
+```{r install packages, eval = FALSE, include = FALSE}
+
+### If any packages are not installed or need to be updated, you can look for them below:
+## get gridSVG from github directly
+# library(devtools) 
+# devtools::install_github("cran/gridSVG")
+# devtools::install_github('sinhrks/ggfortify')
+# devtools::install_github("ropensci/rnaturalearthhires")
+
+## get Bioconductor packages
+if (!requireNamespace("BiocManager"))
+install.packages("BiocManager")
+BiocManager::install("DESeq2")
+
+## installing WGCNA:
+# source("http://bioconductor.org/biocLite.R")
+BiocManager::install(c("AnnotationDbi", "impute", "GO.db", "preprocessCore"))
+BiocManager::install("WGCNA", dependencies=TRUE)
+BiocManager::install("arrayQualityMetrics", dependencies=TRUE) # use this arrayQualityMetrics install if using later versions of R (3.6.3 works)
+#repos="http://cran.us.r-project.org"
+
+## R version 3.6 is funky with arrayQualityMetrics so need this work around:
+install.packages("ape", lib = "/Library/Frameworks/R.framework/Versions/4.2/Resources/library")
+library(ape, lib.loc = "/Library/Frameworks/R.framework/Versions/4.2/Resources/library")
+install.packages("magick", lib = "/Library/Frameworks/R.framework/Versions/4.2/Resources/library", dependencies = FALSE)
+library(magick, lib.loc = "/Library/Frameworks/R.framework/Versions/4.2/Resources/library")
+BiocManager::install("arrayQualityMetrics", type = "source", checkBuilt = TRUE, lib.loc = "/Library/Frameworks/R.framework/Versions/4.2/Resources/library")
+
+
+
+### Used packages that need to be installed to run code (and can be sourced easier from CRAN):
+needed_packages <- c("tidyverse", "dplyr", "readr", "plotly", "vegan", "data.table", "ggpubr", "pdftools", "ggrepel", "adegenet") # Specify necessary packages
+
+not_installed <- needed_packages[!(needed_packages %in% installed.packages()[ , "Package"])] # Extract not installed packages
+if(length(not_installed)) install.packages(not_installed) # Install not installed packages
+
+```
+
+```{r load packages, include=FALSE}
+
+library(tidyverse)
+library(dplyr)
+library(arrayQualityMetrics) # need special install above
+library(ggplot2)
+library(readr)
+library(plotly)
+library(DESeq2) # need special install above
+library(vegan)
+library(data.table)
+library(ggpubr)
+library(pdftools)
+library(ggrepel)
+library(adegenet)
+
+```
+
+
+## Expoloring data {.tabset}
+
+```{r read in data}
+
+# read in the counts file
+counts <- read.table("Data/CVIR_featurecounts_22Jun22.txt", header = TRUE, row.names = 1)
+counts <- counts[-1:-5] # removing columns 1-6 since we do not need them for this
+col_names <- colnames(counts)
+
+# Remove some of the extra stuff in the column names to match with expDesign
+col_names <- gsub("X", "", col_names)
+col_names <- gsub("\\_S.*", "", col_names)
+colnames(counts) <- col_names
+
+
+# read in the experimental design .csv
+expDesign <- read.csv("Data/cvir_expDesign.csv")
+expDesign <- expDesign[match(col_names, expDesign$Sample_ID),] # reorder samples to match count df
+expDesign$infect <- factor(expDesign$infect)
+expDesign$pCO2 <- factor(expDesign$pCO2)
+expDesign$Sample_ID <- factor(expDesign$Sample_ID)
+
+```
+
+<br/>
+
+### Filtering counts
+
+```{r size factor plots}
+
+### 32C experiment
+
+nrow <- nrow(counts) # number of rows/counts (38828)
+countMat <- DESeqDataSetFromMatrix(counts, expDesign, ~ 1) # makes a DESeqDataSet object with count data, experimental design, and no design formula
+counts_SF <- estimateSizeFactors(countMat) #  estimates the size factors using the "median ratio method" described by Equation 5 in Anders and Huber (2010)
+
+# make dataframe of the size factors to visualize
+sizeFactors <- data.frame(sample = counts_SF@colData@listData[["Sample_ID"]], pco2 = counts_SF@colData@listData[["pCO2"]], sponge = counts_SF@colData@listData[["infect"]], sizeFactors = counts_SF@colData@listData[["sizeFactor"]])
+
+# plot sizeFactors
+ggplot(data = sizeFactors[-32,], aes(x = sample, y = sizeFactors, fill = pco2, colour = sponge)) +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90)) +
+  scale_fill_brewer(palette = 2, type = "qual") +
+  scale_colour_manual(values = c("black", "lightgrey")) +
+  geom_bar(stat = "identity") +
+  ggtitle("Unfiltered sizeFactors")
+
+```
+
+After viewing the size factors, it appears that we have 5 samples with really low values that should be removed:
+
+* 19355
+* 19372
+* 19382
+* 19496
+* 19505
+* 19611
+
+<br/>
+
+
+```{r filter low reads (base mean 3)}
+
+### Filtered counts (less than 3)
+
+## remove rows with no or low counts (remove ones with base mean lower than 3)
+keep <- rowSums(counts(counts_SF)) >= 3
+counts_filter <- counts[keep,]
+nrow_filter <- nrow(counts_filter)
+# the updated number of rows (24894)
+
+
+## Redo the count matrix steps from above with the filtered data
+filt_countMat <- DESeqDataSetFromMatrix(counts, expDesign, ~ 1) # makes a DESeqDataSet object with count data, experimental design, and no design formula
+counts_SF_filter <- estimateSizeFactors(filt_countMat) #  estimates the size factors using the "median ratio method" described by Equation 5 in Anders and Huber (2010)
+
+# make dataframe of the size factors to visualize
+sizeFactors_filter <-  data.frame(sample = counts_SF_filter@colData@listData[["Sample_ID"]], pco2 = counts_SF_filter@colData@listData[["pCO2"]], sponge = counts_SF_filter@colData@listData[["infect"]], sizeFactors = counts_SF_filter@colData@listData[["sizeFactor"]])
+
+# plot sizeFactors
+ggplot(data = sizeFactors_filter[-32, ], aes(x = sample, y = sizeFactors, fill = pco2, colour = sponge)) +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90)) +
+  scale_fill_brewer(palette = 2, type = "qual") +
+  scale_colour_manual(values = c("black", "lightgrey")) +
+  geom_bar(stat = "identity") +
+  ggtitle("Filtered sizeFactors")
+
+```
+
+Without filtering low reads, we had a total of **`r nrow`** counts. After filtering out the low counts (those with a base mean less than 3), we now have **`r  nrow_filter`** counts remaining for all *C. virginica* samples.
+
+<br/>
+
+
+```{r quality metrics after filtering, eval=FALSE, comment=FALSE, include=FALSE}
+
+## 32 experiment 
+cds <- estimateDispersions(counts_SF) # obtains dispersion estimates for a count data set
+vsdBlind <- varianceStabilizingTransformation(cds, blind = TRUE) # calculates a VST from the fitted dispersion-mean relation and transforms the count data, yielding a matrix of values which are now approximately homoskedastic
+expSet <- ExpressionSet(assay(vsdBlind), AnnotatedDataFrame(as.data.frame(colData(vsdBlind))))
+arrayQualityMetrics(expSet, intgroup = c("pCO2", "infect"), force = TRUE, outdir = "Data/arrayQualityMetrics")
+
+```
+
+<br/>
+
+  
+## Session Information
+
+Session information from the last full knit of Rmarkdown on `r format(Sys.time(), '%d %B %Y')`.
+
+```{r session info}
+
+sessionInfo()
+
+```
