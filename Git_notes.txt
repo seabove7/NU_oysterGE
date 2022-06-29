@@ -1,0 +1,38 @@
+### Collaborative working on GitHub best practices
+
+## 1) Open up your project and ALWAYS start by checking the status of the project
+git status
+
+## If the output is as follows, then proceed with working on your project!
+# On branch main
+# Your branch is up to date with 'origin/main'.
+
+# nothing to commit, working tree clean
+
+
+## If the ourput is the following, make sure you 'pull' the changes from Git to your local branch
+# On branch main
+# Your branch is behind 'origin/main' by 1 commit, and can be fast-forwarded.
+#   (use "git pull" to update your local branch)
+
+# nothing to commit, working tree clean
+
+## Finally, 
+
+ERROR
+
+
+
+
+## Some helpful Git commands:
+
+# check the status of your git repo with main
+git status
+
+
+
+
+
+
+# If you have files that have been modified that are preventing a pull request (and that are not important i.e., the .DS_Store files), you can use the following:
+git restore <filename>
