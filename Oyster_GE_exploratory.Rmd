@@ -204,7 +204,7 @@ expDesign <- expDesign[-outs,]
 
 ```
 
-```{r filtered size factor plots, fig.width = 10, fig.height = 4}}
+```{r filtered size factor plots, fig.width = 10, fig.height = 4}
 
 ## Redo the count matrix steps from above with the filtered data
 filt_countMat <- DESeqDataSetFromMatrix(filter_counts_out, expDesign, ~ 1) # makes a DESeqDataSet object with count data, experimental design, and no design formula
@@ -291,7 +291,7 @@ plotPCA_allPCs <- function (object, intgroup = "condition", ntop = 500, returnDa
 
 ## calculate PCs based on the vsd transformed GE
 pcaData <- plotPCA_allPCs(vsd, intgroup = c("treat", "pCO2", "infect"), returnData = TRUE) # will provide all PCs
-head(pcaData)
+#head(pcaData)
 
 # extract variance for all PCs
 percentVar <- round((100 * attr(pcaData, "percentVar")), 2)
@@ -302,7 +302,7 @@ percentVar <- round((100 * attr(pcaData, "percentVar")), 2)
 ```{r PERMANOVA}
 
 # run the PERMANOVA with euclidean distances and 1500 iterations
-head(pcaData[6:31])
+#head(pcaData[6:31])
 GE_pca <- adonis2(pcaData[6:31] ~ pcaData$infect * pcaData$pCO2, method = 'eu', permutations = 1500)
 GE_pca
 
@@ -313,14 +313,16 @@ GE_pca
 
 ```{r GE PCA plot, fig.align='center', fig.width = 8, fig.height = 6}
 
-## PCA: T
-ggplot(pcaData, aes(x = PC1, y = PC2)) +
+## PCA: treatment effects (crossed)
+pca_plot <- ggplot(pcaData, aes(x = PC1, y = PC2)) +
   geom_point(size = 3, aes(colour = treat),alpha = 0.8) +
   stat_ellipse(geom = "polygon", aes(colour = treat), fill = NA, type = "t", level = 0.95, show.legend = FALSE) +
   xlab(paste0("PC1 (", percentVar[1], "%)")) +
   ylab(paste0("PC2 (", percentVar[2], "%)")) +
   scale_colour_brewer(palette = 2, type = "qual") +
   theme_classic()
+
+ggplotly(pca_plot)
 
 ```
 
@@ -332,66 +334,74 @@ ggplot(pcaData, aes(x = PC1, y = PC2)) +
 
 <br/>
 
-### 32°C
+### DEGs 
 
-```{r 32C DESeq results}
+```{r general results of DEGs}
 
-res_32C_co2 <- results(dds, contrast = c("pCO2", "400", "2800"), alpha = 0.05)
-res_32C_sponge <- results(dds, contrast = c("infect", "N", "S"), alpha = 0.05)
-#res_32C_both <- results(dds_32C, contrast = c("timeF", "24", "3"), alpha = 0.05)
-
-```
-
-```{r 32C results summary, echo = TRUE}
-
-summary(res_32C_co2)
-summary(res_32C_sponge)
-#summary(res_32C_both)
+## Fist, we will look at the general 'results()' function
+results(dds)
+summary(results(dds))
 
 ```
 
-```{r 32C filter for DEGs}
+```{r create results of DEGs by contrasts}
+
+## When specifying your contrasts, make sure you 'control' level is the second value input and your 'treatment' is the first
+res_con_sponge <- results(dds, contrast = c("treat", "S_400", "N_400"), alpha = 0.05)
+res_con_pco2 <- results(dds, contrast = c("treat", "N_2800", "N_400"), alpha = 0.05)
+res_trt <- results(dds, contrast = c("treat", "S_2800", "N_400"), alpha = 0.05)
+#res_trt_pco2 <- results(dds, contrast = c("treat", "S_2800", "S_400"), alpha = 0.05)
+
+```
+
+```{r results summary, echo = TRUE}
+
+summary(res_con_sponge)
+summary(res_con_pco2)
+summary(res_trt)
+#summary(res_trt_pco2)
+
+```
+
+```{r filter for DEGs}
 
 ## Filter for DEG per pairwise comparison (adjusted p value = 0.05)
-# 32C at 0 v 3 hours
-down32C_3hr <- row.names(res_32C_3hr[res_32C_3hr$padj < 0.05 & !is.na(res_32C_3hr$padj) & res_32C_3hr$log2FoldChange < 0, ])
-up32C_3hr <- row.names(res_32C_3hr[res_32C_3hr$padj < 0.05 & !is.na(res_32C_3hr$padj) & res_32C_3hr$log2FoldChange > 0, ])
+# sponge v no sponge at control pCO2
+downCon_S <- row.names(res_con_sponge[res_con_sponge$padj < 0.05 & !is.na(res_con_sponge$padj) & res_con_sponge$log2FoldChange < 0, ])
+upCon_S <- row.names(res_con_sponge[res_con_sponge$padj < 0.05 & !is.na(res_con_sponge$padj) & res_con_sponge$log2FoldChange > 0, ])
 
-# 32C at 0 v 24 hours
-down32C_24hr <- row.names(res_32C_24hr[res_32C_24hr$padj < 0.05 & !is.na(res_32C_24hr$padj) & res_32C_24hr$log2FoldChange < 0, ])
-up32C_24hr <- row.names(res_32C_24hr[res_32C_24hr$padj < 0.05 & !is.na(res_32C_24hr$padj) & res_32C_24hr$log2FoldChange > 0, ])
+# pCO2 with no sponge
+downTrt_N <- row.names(res_con_pco2[res_con_pco2$padj < 0.05 & !is.na(res_con_pco2$padj) & res_con_pco2$log2FoldChange < 0, ])
+upTrt_N <- row.names(res_con_pco2[res_con_pco2$padj < 0.05 & !is.na(res_con_pco2$padj) & res_con_pco2$log2FoldChange > 0, ])
 
-# 32C at 3 v 24 hours
-down32C_both <- row.names(res_32C_both[res_32C_both$padj < 0.05 & !is.na(res_32C_both$padj) & res_32C_both$log2FoldChange < 0, ])
-up32C_both <- row.names(res_32C_both[res_32C_both$padj < 0.05 & !is.na(res_32C_both$padj) & res_32C_both$log2FoldChange > 0, ])
+# control v double trt (sponge at high pCo2)
+downTrt_S <- row.names(res_trt[res_trt$padj < 0.05 & !is.na(res_trt$padj) & res_trt$log2FoldChange < 0, ])
+upTrt_S <- row.names(res_trt[res_trt$padj < 0.05 & !is.na(res_trt$padj) & res_trt$log2FoldChange > 0, ])
 
 
 
 ## Compile DEG dataframe
-DEG_bar <- list("treat" = c("control vs 3hr", "control vs 24hr", "3hr vs 24hr"), 
-                "up" = c(length(up32C_3hr), length(up32C_24hr), length(up32C_both)), 
-                "down" = c((length(down32C_3hr) * -1), (length(down32C_24hr) * -1), (length(down32C_both) * -1)))
+DEG_bar <- data.frame("treat" = c("400 pCO2; sponge v none", "No sponge; pCO2 comparison", "Control v double trt"), 
+                "up" = c(length(upCon_S), length(upTrt_N), length(upTrt_S)), 
+                "down" = c((length(downCon_S) * -1), (length(downTrt_N) * -1), (length(downTrt_S) * -1)))
 
-DEG_bar <- as.data.frame(DEG_bar)
 DEG_bar <- gather(DEG_bar, reg, genes, up:down)
-DEG_bar$treat <- ordered(DEG_bar$treat, levels = c("control vs 3hr", "control vs 24hr", "3hr vs 24hr"))
+#DEG_bar$treat <- ordered(DEG_bar$treat, levels = c("control vs 3hr", "control vs 24hr", "3hr vs 24hr"))
 
 ```
 
-```{r 32C DEG plot}
+```{r DEG plot}
 
 ## Plot bar graph of DEG
 
-DEG_plot_32 <- ggplot(data = DEG_bar, aes(x = treat, y = genes, fill = reg)) +
+ggplot(data = DEG_bar, aes(x = treat, y = genes, fill = reg)) +
   theme_classic() +
   geom_bar(stat="identity") +
   scale_fill_manual(values = c("#9ebcda", "#8c6bb1")) +
   geom_hline(yintercept = 0, linetype = "dashed", size=0.5) + 
-  ylab("") +
-  ylim(-500, 750) +  
+  ylab("Sig DEGs") +
   theme(legend.position = "none") +
-  xlab ("") +
-  ggtitle("32°C heat stress") 
+  xlab ("")
 
 ```
 
@@ -399,126 +409,31 @@ DEG_plot_32 <- ggplot(data = DEG_bar, aes(x = treat, y = genes, fill = reg)) +
 <br/>
 
 
-### 37°C
+### Venn of DEGs
 
-```{r 37C DESeq results}
-
-res_37C_3hr <- results(dds_37C, contrast = c("timeF", "3", "0"), alpha = 0.05)
-res_37C_24hr <- results(dds_37C, contrast = c("timeF", "24", "0"), alpha = 0.05)
-res_37C_both <- results(dds_37C, contrast = c("timeF", "24", "3"), alpha = 0.05)
-
-```
-
-```{r 37C results summary, echo = TRUE}
-
-summary(res_37C_3hr)
-summary(res_37C_24hr)
-summary(res_37C_both)
-
-```
-
-```{r 37C filter for DEGs}
-
-# 37C at 0 v 3 hours
-down37C_3hr <- row.names(res_37C_3hr[res_37C_3hr$padj < 0.05 & !is.na(res_37C_3hr$padj) & res_37C_3hr$log2FoldChange < 0, ])
-up37C_3hr <- row.names(res_37C_3hr[res_37C_3hr$padj < 0.05 & !is.na(res_37C_3hr$padj) & res_37C_3hr$log2FoldChange > 0, ])
-
-# 37C at 0 v 24 hours
-down37C_24hr <- row.names(res_37C_24hr[res_37C_24hr$padj < 0.05 & !is.na(res_37C_24hr$padj) & res_37C_24hr$log2FoldChange < 0, ])
-up37C_24hr <- row.names(res_37C_24hr[res_37C_24hr$padj < 0.05 & !is.na(res_37C_24hr$padj) & res_37C_24hr$log2FoldChange > 0, ])
-
-# 37C at 3 v 24 hours
-down37C_both <- row.names(res_37C_both[res_37C_both$padj < 0.05 & !is.na(res_37C_both$padj) & res_37C_both$log2FoldChange < 0, ])
-up37C_both <- row.names(res_37C_both[res_37C_both$padj < 0.05 & !is.na(res_37C_both$padj) & res_37C_both$log2FoldChange > 0, ])
-
-
-## Compile DEG dataframe
-DEG_bar_37 <- list("treat" = c("control vs 3hr", "control vs 24hr", "3hr vs 24hr"), 
-                "up" = c(length(up37C_3hr), length(up37C_24hr), length(up37C_both)), 
-                "down" = c((length(down37C_3hr) * -1), (length(down37C_24hr) * -1), (length(down37C_both) * -1)))
-
-DEG_bar_37 <- as.data.frame(DEG_bar_37)
-DEG_bar_37 <- gather(DEG_bar_37, reg, genes, up:down)
-DEG_bar_37$treat <- ordered(DEG_bar_37$treat, levels = c("control vs 3hr", "control vs 24hr", "3hr vs 24hr"))
-
-```
-
-```{r 37C DEG plot}
-
-## Plot bar graph of DEG
-
-DEG_plot_37 <- ggplot(data = DEG_bar_37, aes(x = treat, y = genes, fill = reg)) +
-  theme_classic() +
-  geom_bar(stat="identity") +
-  scale_fill_manual(values = c("#fec44f", "#ec7014")) +
-  geom_hline(yintercept = 0, linetype = "dashed", size=0.5) + 
-  ylim(-500, 750) +
-  ylab("") +
-  theme(legend.position = "none") +
-  xlab ("") +
-  ggtitle("37°C heat stress") 
-
-```
-
-<br/>
-
-### DEGs by experiment
-
-```{r DEG plot of both experiments, fig.align='center', fig.width = 9, fig.height = 4}
-
-ggarrange(DEG_plot_32, DEG_plot_37)
-ggsave("Figures/DEGs_perExperiment.png", width = 9, height = 4)
-ggsave("Figures/DEGs_perExperiment.pdf", width = 9, height = 4)
-
-```
+It is just a demo, not very exciting :D
 
 ```{r}
 
 library(ggvenn)
 
 ## Make the lists of down v up regulated genes for each experiment
-down_32 <- list("3 hrs" = down32C_3hr, "24 hrs" = down32C_24hr)
-down_37 <- list("3 hrs" = down37C_3hr, "24 hrs" = down37C_24hr)
-
-up_32 <- list("3 hrs" = up32C_3hr, "24 hrs" = up32C_24hr)
-up_37 <- list("3 hrs" = up37C_3hr, "24 hrs" = up37C_24hr)
+venn_trt_df <- list("down" = downTrt_S, "up" = upTrt_S)
 
 
 ## Plot the seperate venn diagrams
-ven_up_32 <- ggvenn(up_32, 
+ggvenn(venn_trt_df, 
        show_percentage=FALSE,
        fill_color = c("#8073ac", "#2d004b"), fill_alpha = 0.3,
        stroke_size = 0.4, text_size = 3, text_color = "#25292B",
        set_name_color = "#C8322F", set_name_size = 4,
        )
 
-ven_up_37 <- ggvenn(up_37, 
-       show_percentage=FALSE,
-       fill_color = c("#e08214", "#7f3b08"), fill_alpha = 0.3,
-       stroke_size = 0.4, text_size = 3, text_color = "#25292B",
-       set_name_color = "#C8322F", set_name_size = 4,
-       )
 
-
-ven_down_32 <- ggvenn(down_32, 
-       show_percentage=FALSE,
-       fill_color = c("#8073ac", "#2d004b"), fill_alpha = 0.3,
-       stroke_size = 0.4, text_size = 3, text_color = "#25292B",
-       set_name_color = "#2B65AE", set_name_size = 4,
-       )
-
-ven_down_37 <- ggvenn(down_37, 
-       show_percentage=FALSE,
-       fill_color = c("#e08214", "#7f3b08"), fill_alpha = 0.3,
-       stroke_size = 0.4, text_size = 3, text_color = "#25292B",
-       set_name_color = "#2B65AE", set_name_size = 4,
-       )
-
-
-## Combine and save plot
-ggarrange(ven_up_32, ven_up_37, ven_down_32, ven_down_37)
-ggsave("Figures/FigureXX_Vens.pdf", width = 4, height = 4)
-ggsave("Figures/FigureXX_Vens.png", width = 4, height = 4)
+# ## Combine and save plot
+# ggarrange(ven_up_32, ven_up_37, ven_down_32, ven_down_37)
+# ggsave("Figures/FigureXX_Vens.pdf", width = 4, height = 4)
+# ggsave("Figures/FigureXX_Vens.png", width = 4, height = 4)
 
 ```
 
