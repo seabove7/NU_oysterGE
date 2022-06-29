@@ -326,6 +326,8 @@ ggplotly(pca_plot)
 
 ```
 
+PCA plot with each point being one oyster sample colored by treatment. Orange represents the control treatment (no boring sponge, pCO2 level 400), green represents no sponge, pCO2 level 2800, purple represents samples infected with boring sponge at pCO2 2800, and pink represents samples infected with boring sponge at pCO2 400.
+
 <br/>
 <br/>
 
