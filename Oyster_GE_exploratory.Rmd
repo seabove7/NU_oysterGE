@@ -434,18 +434,58 @@ ggplot(data = DEG_bar, aes(x = treat, y = genes, fill = reg)) +
 
 It is just a demo, not very exciting :D
 
-```{r}
+```{r Venn Diagram}
 
 library(ggvenn)
 
 ## Make the lists of down v up regulated genes for each experiment
-venn_trt_df <- list("down" = downTrt_S, "up" = upTrt_S)
+venn_trt_df <- list("up" = downTrt_S, "up" = upTrt_S)
 
-## Make list of all loci for each treatment
-venn_loci_df <- list("down" = downTrt_S, "up" = upTrt_S)
+## Comparing up NS_400 vs S_400 and up NS_400 vs NS_2800
+venn_loci_df <- list("up NS_400 vs S_400" = upCon_S, "up NS_400 vs NS_2800" = upTrt_N)
+
+## Comparing up NS_400 vs S_2800 and up S_2800 vs NS_2800
+venn_loci_df <- list("up NS_400 vs S_2800" = upTrt_S, "up S_2800 vs NS_2800" = upsshn)
+
+## Comparing up NS_400 vs S_2800 and up S_2800 vs NS_2800
+venn_loci_up <- list("up NS_400 vs S_2800" = upTrt_S, "down S_2800 vs NS_2800" = uptrtS)
+
+## Comparing down NS_400 vs S_2800 and up S_2800 vs NS_2800
+venn_loci_down <- list("down NS_400 vs S_2800" = downTrt_S, "down S_2800 vs NS_2800" = downsshn)
+
+## Comparing down NS_400 vs S_2800 and down S_2800 vs S_400
+venn_loci2_down <- list("down NS_400 vs S_2800" = downTrt_S, "down S_2800 vs NS_2800" = downtrtS)
 
 ## Plot the seperate venn diagrams
 ggvenn(venn_trt_df, 
+       show_percentage=FALSE,
+       fill_color = c("#8073ac", "#2d004b"), fill_alpha = 0.3,
+       stroke_size = 0.4, text_size = 3, text_color = "#25292B",
+       set_name_color = "#C8322F", set_name_size = 4,
+       )
+
+ggvenn(venn_loci_df, 
+       show_percentage=FALSE,
+       fill_color = c("#8073ac", "#2d004b"), fill_alpha = 0.3,
+       stroke_size = 0.4, text_size = 3, text_color = "#25292B",
+       set_name_color = "#C8322F", set_name_size = 4,
+       )
+
+ggvenn(venn_loci_down, 
+       show_percentage=FALSE,
+       fill_color = c("#8073ac", "#2d004b"), fill_alpha = 0.3,
+       stroke_size = 0.4, text_size = 3, text_color = "#25292B",
+       set_name_color = "#C8322F", set_name_size = 4,
+       )
+
+ggvenn(venn_loci2_down, 
+       show_percentage=FALSE,
+       fill_color = c("#8073ac", "#2d004b"), fill_alpha = 0.3,
+       stroke_size = 0.4, text_size = 3, text_color = "#25292B",
+       set_name_color = "#C8322F", set_name_size = 4,
+       )
+
+ggvenn(venn_loci_up, 
        show_percentage=FALSE,
        fill_color = c("#8073ac", "#2d004b"), fill_alpha = 0.3,
        stroke_size = 0.4, text_size = 3, text_color = "#25292B",
@@ -459,7 +499,8 @@ ggvenn(venn_trt_df,
 # ggsave("Figures/FigureXX_Vens.png", width = 4, height = 4)
 
 ```
-
+<br/>
+<br/>
   
 ## Session Information
 
