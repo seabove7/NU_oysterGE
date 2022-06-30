@@ -124,6 +124,7 @@ library(ggpubr)
 library(pdftools)
 library(ggrepel)
 library(adegenet)
+library(ggvenn)
 
 ```
 
@@ -399,14 +400,11 @@ downsshn <- row.names(res_shn_pco2[res_shn_pco2$padj < 0.05 & !is.na(res_shn_pco
 upsshn <- row.names(res_shn_pco2[res_shn_pco2$padj < 0.05 & !is.na(res_shn_pco2$padj) & res_trt$log2FoldChange > 0, ])
 
 ## Compile DEG dataframe
-DEG_bar <- data.frame("treat" = c("400 pCO2; sponge v none", "No sponge; pCO2 comparison", "Control v double trt", "Sponge; pCO2 comparison", "pCO2: sponge v none", "High pCO2: sponge v none"), 
+DEG_bar <- data.frame("treat" = c(toString(unlist(str_split(res_con_sponge@elementMetadata@listData[["description"]][2], " "))[c(8,6)]), toString(unlist(str_split(res_con_pco2@elementMetadata@listData[["description"]][2], " "))[c(8,6)]), toString(unlist(str_split(res_trt@elementMetadata@listData[["description"]][2], " "))[c(8,6)]), toString(unlist(str_split(res_trt_pco2@elementMetadata@listData[["description"]][2], " "))[c(8,6)]), toString(unlist(str_split(res_stn_pco2@elementMetadata@listData[["description"]][2], " "))[c(8,6)]), toString(unlist(str_split(res_shn_pco2@elementMetadata@listData[["description"]][2], " "))[c(8,6)])), 
                 "up" = c(length(upCon_S), length(upTrt_N), length(upTrt_S), length(uptrtS), length(upslsh), length(upsshn)), 
                 "down" = c((length(downCon_S) * -1), (length(downTrt_N) * -1), (length(downTrt_S) * -1), (length(downtrtS) * -1), (length(downslsh) * -1), (length(downsshn) * -1)))
 
 DEG_bar <- gather(DEG_bar, reg, genes, up:down)
-
-View(DEG_bar)
-#DEG_bar$treat <- ordered(DEG_bar$treat, levels = c("control vs 3hr", "control vs 24hr", "3hr vs 24hr"))
 
 ```
 
@@ -420,7 +418,7 @@ ggplot(data = DEG_bar, aes(x = treat, y = genes, fill = reg)) +
   scale_fill_manual(values = c("#9ebcda", "#8c6bb1")) +
   geom_hline(yintercept = 0, linetype = "dashed", size=0.5) + 
   ylab("Sig DEGs") +
-  theme(legend.position = "none") +
+  theme(legend.position = "none", axis.text.x = element_text(angle = 90)) +
   xlab ("")
 
 ```
@@ -429,77 +427,97 @@ ggplot(data = DEG_bar, aes(x = treat, y = genes, fill = reg)) +
 <br/>
 
 
-### Venn of DEGs
+### Paired Venns of DEGs
 
-It is just a demo, not very exciting :D
-
-```{r Venn Diagram}
-
-library(ggvenn)
-
-## Make the lists of down v up regulated genes for each experiment
-venn_trt_df <- list("up" = downTrt_S, "up" = upTrt_S)
-
-## Comparing up NS_400 vs S_400 and up NS_400 vs NS_2800
-venn_loci_df <- list("up NS_400 vs S_400" = upCon_S, "up NS_400 vs NS_2800" = upTrt_N)
+```{r paired Venns}
 
 ## Comparing up NS_400 vs S_2800 and up S_2800 vs NS_2800
-venn_loci_df <- list("up NS_400 vs S_2800" = upTrt_S, "up S_2800 vs NS_2800" = upsshn)
+venn_loci_df <- list("NS_400 vs S_2800" = upTrt_S, "S_2800 vs NS_2800" = upsshn)
 
 ## Comparing up NS_400 vs S_2800 and up S_2800 vs NS_2800
-venn_loci_up <- list("up NS_400 vs S_2800" = upTrt_S, "down S_2800 vs NS_2800" = uptrtS)
+venn_loci_up <- list("NS_400 vs S_2800" = upTrt_S, "S_2800 vs NS_2800" = uptrtS)
 
 ## Comparing down NS_400 vs S_2800 and up S_2800 vs NS_2800
-venn_loci_down <- list("down NS_400 vs S_2800" = downTrt_S, "down S_2800 vs NS_2800" = downsshn)
+venn_loci_down <- list("NS_400 vs S_2800" = downTrt_S, "S_2800 vs NS_2800" = downsshn)
 
 ## Comparing down NS_400 vs S_2800 and down S_2800 vs S_400
-venn_loci2_down <- list("down NS_400 vs S_2800" = downTrt_S, "down S_2800 vs NS_2800" = downtrtS)
+venn_loci2_down <- list("NS_400 vs S_2800" = downTrt_S, "S_2800 vs NS_2800" = downtrtS)
 
 ## Plot the seperate venn diagrams
-ggvenn(venn_trt_df, 
+ven1 <- ggvenn(venn_loci_df, 
        show_percentage=FALSE,
-       fill_color = c("#8073ac", "#2d004b"), fill_alpha = 0.3,
+       fill_color = c("darkorange", "coral"), fill_alpha = 0.3,
        stroke_size = 0.4, text_size = 3, text_color = "#25292B",
-       set_name_color = "#C8322F", set_name_size = 4,
+       set_name_color = "#C8322F", set_name_size = 3,
        )
 
-ggvenn(venn_loci_df, 
+ven2 <- ggvenn(venn_loci_up, 
        show_percentage=FALSE,
-       fill_color = c("#8073ac", "#2d004b"), fill_alpha = 0.3,
+       fill_color = c("darkorange", "coral"), fill_alpha = 0.3,
        stroke_size = 0.4, text_size = 3, text_color = "#25292B",
-       set_name_color = "#C8322F", set_name_size = 4,
+       set_name_color = "#C8322F", set_name_size = 3,
        )
 
-ggvenn(venn_loci_down, 
+ven3 <- ggvenn(venn_loci_down, 
        show_percentage=FALSE,
-       fill_color = c("#8073ac", "#2d004b"), fill_alpha = 0.3,
+       fill_color = c("cyan4", "cornflowerblue"), fill_alpha = 0.3,
        stroke_size = 0.4, text_size = 3, text_color = "#25292B",
-       set_name_color = "#C8322F", set_name_size = 4,
+       set_name_color = "blue", set_name_size = 3,
        )
 
-ggvenn(venn_loci2_down, 
+ven4 <- ggvenn(venn_loci2_down, 
        show_percentage=FALSE,
-       fill_color = c("#8073ac", "#2d004b"), fill_alpha = 0.3,
+       fill_color = c("cyan4", "cornflowerblue"), fill_alpha = 0.3,
        stroke_size = 0.4, text_size = 3, text_color = "#25292B",
-       set_name_color = "#C8322F", set_name_size = 4,
-       )
-
-ggvenn(venn_loci_up, 
-       show_percentage=FALSE,
-       fill_color = c("#8073ac", "#2d004b"), fill_alpha = 0.3,
-       stroke_size = 0.4, text_size = 3, text_color = "#25292B",
-       set_name_color = "#C8322F", set_name_size = 4,
+       set_name_color = "blue", set_name_size = 3,
        )
 
 
-# ## Combine and save plot
-# ggarrange(ven_up_32, ven_up_37, ven_down_32, ven_down_37)
+## Combine and save plot
+ggarrange(ven1, ven2, ven3, ven4)
 # ggsave("Figures/FigureXX_Vens.pdf", width = 4, height = 4)
 # ggsave("Figures/FigureXX_Vens.png", width = 4, height = 4)
 
 ```
 <br/>
 <br/>
+
+### Full Venns of DEGs
+
+Need to add all treatments with DEGs to the below code (ANGELA)
+
+```{r full venns}
+
+## Venn of up DEGs
+venn_up <- list("NS_400 vs S_2800" = upTrt_S, "S_2800 vs NS_2800" = uptrtS, "S_2800 vs NS_2800" = upsshn)
+
+## Comparing down NS_400 vs S_2800 and up S_2800 vs NS_2800
+venn_down <- list("NS_400 vs S_2800" = downTrt_S, "S_2800 vs NS_2800" = downsshn, "S_2800 vs NS_2800" = downtrtS)
+
+
+## Plot the seperate venn diagrams
+ven_up <- ggvenn(venn_up, 
+       show_percentage=FALSE,
+       fill_color = c("darkorange", "coral", "red"), fill_alpha = 0.3,
+       stroke_size = 0.4, text_size = 3, text_color = "#25292B",
+       set_name_color = "#C8322F", set_name_size = 3,
+       )
+
+ven_down <- ggvenn(venn_down, 
+       show_percentage=FALSE,
+       fill_color = c("cyan4", "cornflowerblue", "darkslategray3"), fill_alpha = 0.3,
+       stroke_size = 0.4, text_size = 3, text_color = "#25292B",
+       set_name_color = "blue", set_name_size = 3,
+       )
+
+## Combine and save plot
+ggarrange(ven_up, ven_down)
+
+```
+
+<br/>
+<br/>
+
   
 ## Session Information
 
