@@ -323,7 +323,12 @@ pca_plot <- ggplot(pcaData, aes(x = PC1, y = PC2)) +
   scale_colour_brewer(palette = 2, type = "qual") +
   theme_classic()
 
-ggplotly(pca_plot)
+pca_plot
+
+ggsave("Figures/FigureXX_GEpca.pdf", width = 6, height = 4)
+ggsave("Figures/FigureXX_GEpca.png", width = 6, height = 4)
+
+
 
 ```
 
@@ -421,6 +426,9 @@ ggplot(data = DEG_bar, aes(x = treat, y = genes, fill = reg)) +
   theme(legend.position = "none", axis.text.x = element_text(angle = 90)) +
   xlab ("")
 
+ggsave("Figures/FigureXX_DEGsBar.pdf", width = 6, height = 4)
+ggsave("Figures/FigureXX_DEGsBar.png", width = 6, height = 4)
+
 ```
 
 <br/>
@@ -475,8 +483,8 @@ ven4 <- ggvenn(venn_loci2_down,
 
 ## Combine and save plot
 ggarrange(ven1, ven2, ven3, ven4)
-# ggsave("Figures/FigureXX_Vens.pdf", width = 4, height = 4)
-# ggsave("Figures/FigureXX_Vens.png", width = 4, height = 4)
+ggsave("Figures/FigureXX_PairedVens.pdf", width = 4, height = 4)
+ggsave("Figures/FigureXX_PairedVens.png", width = 4, height = 4)
 
 ```
 <br/>
@@ -512,6 +520,8 @@ ven_down <- ggvenn(venn_down,
 
 ## Combine and save plot
 ggarrange(ven_up, ven_down)
+ggsave("Figures/FigureXX_fullVens.pdf", width = 3, height = 2)
+ggsave("Figures/FigureXX_fullVens.png", width = 3, height = 2)
 
 ```
 
