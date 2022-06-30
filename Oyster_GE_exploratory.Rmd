@@ -352,7 +352,11 @@ summary(results(dds))
 res_con_sponge <- results(dds, contrast = c("treat", "S_400", "N_400"), alpha = 0.05)
 res_con_pco2 <- results(dds, contrast = c("treat", "N_2800", "N_400"), alpha = 0.05)
 res_trt <- results(dds, contrast = c("treat", "S_2800", "N_400"), alpha = 0.05)
-#res_trt_pco2 <- results(dds, contrast = c("treat", "S_2800", "S_400"), alpha = 0.05)
+
+#new
+res_trt_pco2 <- results(dds, contrast = c("treat", "S_2800", "S_400"), alpha = 0.05)
+res_stn_pco2 <- results(dds, contrast = c("treat", "S_400", "N_2800"), alpha = 0.05)
+res_shn_pco2 <- results(dds, contrast = c("treat", "S_2800", "N_2800"), alpha = 0.05)
 
 ```
 
@@ -361,7 +365,9 @@ res_trt <- results(dds, contrast = c("treat", "S_2800", "N_400"), alpha = 0.05)
 summary(res_con_sponge)
 summary(res_con_pco2)
 summary(res_trt)
-#summary(res_trt_pco2)
+summary(res_trt_pco2)
+summary(res_stn_pco2)
+summary(res_shn_pco2)
 
 ```
 
@@ -380,14 +386,27 @@ upTrt_N <- row.names(res_con_pco2[res_con_pco2$padj < 0.05 & !is.na(res_con_pco2
 downTrt_S <- row.names(res_trt[res_trt$padj < 0.05 & !is.na(res_trt$padj) & res_trt$log2FoldChange < 0, ])
 upTrt_S <- row.names(res_trt[res_trt$padj < 0.05 & !is.na(res_trt$padj) & res_trt$log2FoldChange > 0, ])
 
+#sponge high vs sponge low
+downtrtS <- row.names(res_trt_pco2[res_trt_pco2$padj < 0.05 & !is.na(res_trt_pco2$padj) & res_trt$log2FoldChange < 0, ])
+uptrtS <- row.names(res_trt_pco2[res_trt_pco2$padj < 0.05 & !is.na(res_trt_pco2$padj) & res_trt$log2FoldChange > 0, ])
+
+#sponge low vs no sponge high
+downslsh <- row.names(res_stn_pco2[res_stn_pco2$padj < 0.05 & !is.na(res_stn_pco2$padj) & res_trt$log2FoldChange < 0, ])
+upslsh <- row.names(res_stn_pco2[res_stn_pco2$padj < 0.05 & !is.na(res_stn_pco2$padj) & res_trt$log2FoldChange > 0, ])
+
+#sponge high vs no sponge high
+downsshn <- row.names(res_shn_pco2[res_shn_pco2$padj < 0.05 & !is.na(res_shn_pco2$padj) & res_trt$log2FoldChange < 0, ])
+upsshn <- row.names(res_shn_pco2[res_shn_pco2$padj < 0.05 & !is.na(res_shn_pco2$padj) & res_trt$log2FoldChange > 0, ])
 
 
 ## Compile DEG dataframe
-DEG_bar <- data.frame("treat" = c("400 pCO2; sponge v none", "No sponge; pCO2 comparison", "Control v double trt"), 
-                "up" = c(length(upCon_S), length(upTrt_N), length(upTrt_S)), 
-                "down" = c((length(downCon_S) * -1), (length(downTrt_N) * -1), (length(downTrt_S) * -1)))
+DEG_bar <- data.frame("treat" = c("400 pCO2; sponge v none", "No sponge; pCO2 comparison", "Control v double trt", "Sponge; pCO2 comparison", "pCO2: sponge v none", "High pCO2: sponge v none"), 
+                "up" = c(length(upCon_S), length(upTrt_N), length(upTrt_S), length(uptrtS), length(upslsh), length(upsshn)), 
+                "down" = c((length(downCon_S) * -1), (length(downTrt_N) * -1), (length(downTrt_S) * -1), (length(downtrtS) * -1), (length(downslsh) * -1), (length(downsshn) * -1)))
 
 DEG_bar <- gather(DEG_bar, reg, genes, up:down)
+
+View(DEG_bar)
 #DEG_bar$treat <- ordered(DEG_bar$treat, levels = c("control vs 3hr", "control vs 24hr", "3hr vs 24hr"))
 
 ```
@@ -422,6 +441,8 @@ library(ggvenn)
 ## Make the lists of down v up regulated genes for each experiment
 venn_trt_df <- list("down" = downTrt_S, "up" = upTrt_S)
 
+## Make list of all loci for each treatment
+venn_loci_df <- list("down" = downTrt_S, "up" = upTrt_S)
 
 ## Plot the seperate venn diagrams
 ggvenn(venn_trt_df, 
