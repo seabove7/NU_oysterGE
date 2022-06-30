@@ -398,7 +398,6 @@ upslsh <- row.names(res_stn_pco2[res_stn_pco2$padj < 0.05 & !is.na(res_stn_pco2$
 downsshn <- row.names(res_shn_pco2[res_shn_pco2$padj < 0.05 & !is.na(res_shn_pco2$padj) & res_trt$log2FoldChange < 0, ])
 upsshn <- row.names(res_shn_pco2[res_shn_pco2$padj < 0.05 & !is.na(res_shn_pco2$padj) & res_trt$log2FoldChange > 0, ])
 
-
 ## Compile DEG dataframe
 DEG_bar <- data.frame("treat" = c("400 pCO2; sponge v none", "No sponge; pCO2 comparison", "Control v double trt", "Sponge; pCO2 comparison", "pCO2: sponge v none", "High pCO2: sponge v none"), 
                 "up" = c(length(upCon_S), length(upTrt_N), length(upTrt_S), length(uptrtS), length(upslsh), length(upsshn)), 
