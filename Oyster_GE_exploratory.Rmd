@@ -411,6 +411,12 @@ DEG_bar <- data.frame("treat" = c(toString(unlist(str_split(res_con_sponge@eleme
 
 DEG_bar <- gather(DEG_bar, reg, genes, up:down)
 
+split_stringfunc <- function(x) {
+  toString(unlist(str_split(x@elementMetadata@listData[["description"]][2], " "))[c(8,6)])
+}
+
+split_stringfunc(res_trt)
+
 ```
 
 ```{r DEG plot}
@@ -420,7 +426,7 @@ DEG_bar <- gather(DEG_bar, reg, genes, up:down)
 ggplot(data = DEG_bar, aes(x = treat, y = genes, fill = reg)) +
   theme_classic() +
   geom_bar(stat="identity") +
-  scale_fill_manual(values = c("#9ebcda", "#8c6bb1")) +
+  scale_fill_manual(values = c("cadetblue2", "coral")) +
   geom_hline(yintercept = 0, linetype = "dashed", size=0.5) + 
   ylab("Sig DEGs") +
   theme(legend.position = "none", axis.text.x = element_text(angle = 90)) +
@@ -497,7 +503,7 @@ Need to add all treatments with DEGs to the below code (ANGELA)
 ```{r full venns}
 
 ## Venn of up DEGs
-venn_up <- list("NS_400 vs S_2800" = upTrt_S, "S_2800 vs NS_2800" = uptrtS, "S_2800 vs NS_2800" = upsshn)
+venn_up <- list("NS_400 vs S_2800" = upTrt_S, "S_2800 vs NS_2800" = uptrtS, "S_2800 vs NS_2800" = upsshn, "N_2800 vs S_400" = upslsh)
 
 ## Comparing down NS_400 vs S_2800 and up S_2800 vs NS_2800
 venn_down <- list("NS_400 vs S_2800" = downTrt_S, "S_2800 vs NS_2800" = downsshn, "S_2800 vs NS_2800" = downtrtS)
@@ -506,9 +512,9 @@ venn_down <- list("NS_400 vs S_2800" = downTrt_S, "S_2800 vs NS_2800" = downsshn
 ## Plot the seperate venn diagrams
 ven_up <- ggvenn(venn_up, 
        show_percentage=FALSE,
-       fill_color = c("darkorange", "coral", "red"), fill_alpha = 0.3,
+       fill_color = c("darkorange", "coral", "red", "cornsilk2"), fill_alpha = 0.3,
        stroke_size = 0.4, text_size = 3, text_color = "#25292B",
-       set_name_color = "#C8322F", set_name_size = 3,
+       set_name_color = "#C8322F", set_name_size = 2,
        )
 
 ven_down <- ggvenn(venn_down, 
