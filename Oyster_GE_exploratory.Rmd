@@ -126,6 +126,8 @@ library(ggrepel)
 library(adegenet)
 library(ggvenn)
 
+source("Code/CustomFunctions.R")
+
 ```
 
 
@@ -261,34 +263,6 @@ norm_counts <- counts(dds, normalized = TRUE)
 ```
 
 ```{r GE PCA, include=FALSE}
-
-### Updated 'plotPCA' (from DESeq2) to save all PCs for plasticity measures
-plotPCA_allPCs <- function (object, intgroup = "condition", ntop = 500, returnData = FALSE) 
-{
-  rv <- rowVars(assay(object)) # Variance estimates for each row (column) in a matrix.
-  select <- order(rv, decreasing = TRUE)[seq_len(min(ntop, length(rv)))] # orders genes from largest -> smallest and pulls ntop (default 500) genes
-  pca <- prcomp(t(assay(object)[select, ]), center = TRUE, scale. = FALSE) # performs PCA on ntop (default 500) from dataset
-  percentVar <- pca$sdev^2/sum(pca$sdev^2)
-  if (!all(intgroup %in% names(colData(object)))) {
-    stop("the argument 'intgroup' should specify columns of colData(dds)")
-  }
-  intgroup.df <- as.data.frame(colData(object)[, intgroup, drop = FALSE])
-  group <- if (length(intgroup) > 1) {
-    factor(apply(intgroup.df, 1, paste, collapse = ":"))
-  }
-  else {
-    colData(object)[[intgroup]]
-  }
-  d <- data.frame(group = group, intgroup.df, name = colnames(object), pca$x)
-  if (returnData) {
-    attr(d, "percentVar") <- percentVar # add [1:2] if only want 1st two PC variances
-    return(d)
-  }
-  ggplot(data = d, aes_string(x = "PC1", y = "PC2", color = "group")) + 
-    geom_point(size = 3) + xlab(paste0("PC1: ", round(percentVar[1] * 
-                                                        100), "% variance")) + ylab(paste0("PC2: ", round(percentVar[2] * 
-                                                                                                            100), "% variance")) + coord_fixed()
-}
 
 ## calculate PCs based on the vsd transformed GE
 pcaData <- plotPCA_allPCs(vsd, intgroup = c("treat", "pCO2", "infect"), returnData = TRUE) # will provide all PCs
@@ -534,6 +508,55 @@ ggsave("Figures/FigureXX_fullVens.png", width = 3, height = 2)
 <br/>
 <br/>
 
+
+## Gene expression plasticity {.tabset}
+
+```{r}
+
+#### here is the code from the function without modifications:
+## To run the function, enter the following objects:
+# PCAplast(pca = XXX, # the PCA dataframe containing the PCA eigenvalues
+#          data = XXX, # the condition/treatment data corresponding to samples
+#          sample_ID = "XXX", # the name of column that provide unique ID per sample (if blank, will pull rownames for this)
+#          num_pca =  "XXX", # the number of PCAs to include in analysis (default is 'all', but you can specify another number with a minimum of 2 PCAs)
+#          control_col = "XXX", # what the 'treatment' column is called
+#          control_lvl = "XXX", # control level of the treatment. If blank, a control mean per control level is assumed
+#          group = "XXX") # the grouping column (i.e., colony). If blank, will assume control level grouping only!
+
+
+
+
+## To run the function, enter the following objects:
+ge_plast_all <-  PCAplast(pca = pcaData[6:31], # the PCA dataframe containing the PCA eigenvalues
+                      data = pcaData[-6:-31], # the condition/treatment data corresponding to samples
+                      num_pca =  "all", # the number of PCAs to include in analysis (default is 'all', but you can specify another number with a minimum of 2 PCAs)
+                      control_col = "treat", # what the 'treatment' column is called
+                      control_lvl = "N_400") # control level of the treatment. If blank, a control mean per level is assumed
+
+
+pca_all_plot <- ggplot(data = ge_plast_all, aes(x = treat, y = dist, colour = treat)) + 
+  geom_point(position = position_dodge(width = 0.5)) + 
+  geom_boxplot(alpha = 0.5)
+
+
+ge_plast_2 <-  PCAplast(pca = pcaData[6:31], # the PCA dataframe containing the PCA eigenvalues
+                      data = pcaData[-6:-31], # the condition/treatment data corresponding to samples
+                      num_pca =  "all", # the number of PCAs to include in analysis (default is 'all', but you can specify another number with a minimum of 2 PCAs)
+                      control_col = "treat", # what the 'treatment' column is called
+                      control_lvl = "N_400") # control level of the treatment. If blank, a control mean per level is assumed
+
+
+pca2_plot <- ggplot(data = ge_plast_2, aes(x = treat, y = dist, colour = treat)) + 
+  geom_point(position = position_dodge(width = 0.5)) + 
+  geom_boxplot(alpha = 0.5)
+
+ggarrange(pca2_plot, pca_all_plot)
+
+
+```
+
+<br/>
+<br/>
   
 ## Session Information
 
