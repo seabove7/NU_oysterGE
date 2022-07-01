@@ -513,6 +513,8 @@ ggsave("Figures/FigureXX_fullVens.png", width = 3, height = 2)
 
 ```{r}
 
+mycolors <- c("coral", "darkorange", "red")
+
 #### here is the code from the function without modifications:
 ## To run the function, enter the following objects:
 # PCAplast(pca = XXX, # the PCA dataframe containing the PCA eigenvalues
@@ -533,10 +535,12 @@ ge_plast_all <-  PCAplast(pca = pcaData[6:31], # the PCA dataframe containing th
                       control_col = "treat", # what the 'treatment' column is called
                       control_lvl = "N_400") # control level of the treatment. If blank, a control mean per level is assumed
 
-
+#plasticity plot 1
 pca_all_plot <- ggplot(data = ge_plast_all, aes(x = treat, y = dist, colour = treat)) + 
   geom_point(position = position_dodge(width = 0.5)) + 
-  geom_boxplot(alpha = 0.5)
+  geom_boxplot(alpha = 0.5, color = mycolors) +
+  xlab("Treatment") +
+  ggtitle("B)")
 
 
 ge_plast_2 <-  PCAplast(pca = pcaData[6:31], # the PCA dataframe containing the PCA eigenvalues
@@ -545,15 +549,65 @@ ge_plast_2 <-  PCAplast(pca = pcaData[6:31], # the PCA dataframe containing the 
                       control_col = "treat", # what the 'treatment' column is called
                       control_lvl = "N_400") # control level of the treatment. If blank, a control mean per level is assumed
 
-
+#plasticity plot2
 pca2_plot <- ggplot(data = ge_plast_2, aes(x = treat, y = dist, colour = treat)) + 
   geom_point(position = position_dodge(width = 0.5)) + 
-  geom_boxplot(alpha = 0.5)
+  geom_boxplot(alpha = 0.5) +
+  xlab("Treatment") +
+  ggtitle("A)")
 
-ggarrange(pca2_plot, pca_all_plot)
+# ANOVA test
+res_aov <- aov(dist ~ treat,
+  data = ge_plast_2
+)
+summary(res_aov)
+
+# ANOVA test ge_plast_all
+res_aov_all <- aov(dist ~ treat,
+  data = ge_plast_all
+)
+summary(res_aov_all)
+
+# calculate mean and standard error for ge_plast_1
+plasticity1_means_se <- ge_plast_all %>%  
+  group_by(treat) %>% 
+  summarize(mean_N=mean(dist), 
+            sd_N=sd(dist), 
+            N_N=n(), 
+            se=sd_N/sqrt(N_N)
+  ) 
+
+# calculate mean and standard error for ge_plast_2
+plasticity_means_se <- ge_plast_2 %>%  
+  group_by(treat) %>% 
+  summarize(mean_N=mean(dist), 
+            sd_N=sd(dist), 
+            N_N=n(), 
+            se=sd_N/sqrt(N_N)
+  ) 
+
+#plot means and standard error
+mean_se_plot <- ggplot(plasticity_means_se, aes(x=treat, y=mean_N, colour = treat)) + 
+  geom_point() +
+  geom_errorbar(aes(ymin=mean_N-se, ymax=mean_N+se), width=0.2, size=0.5) +
+  ylab("Mean of Dist") +
+  ggtitle("C)")
+
+mean_se_plot_all <- ggplot(plasticity1_means_se, aes(x=treat, y=mean_N, colour = treat)) + 
+  geom_point() +
+  geom_errorbar(aes(ymin=mean_N-se, ymax=mean_N+se), width=0.2, size=0.5) +
+  ylab("Mean of Dist") +
+  ggtitle("D)")
+
+ggarrange(pca2_plot, pca_all_plot, mean_se_plot, mean_se_plot_all)
 
 
 ```
+
+Assessment of plasticity (calculated as the average of the distances of each sample to the mean eigenvalue) in different treatments. N_400 was omitted due to _____. 
+
+## Results
+There is no statistically significant difference in the means of plasticity across different treatments (p = 0.17). Overall, samples in high pCO2 (2800) and infected with sponge exhibited the highest plasticity. 
 
 <br/>
 <br/>
