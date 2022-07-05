@@ -537,7 +537,7 @@ ge_plast_all <-  PCAplast(pca = pcaData[6:31], # the PCA dataframe containing th
 
 #plasticity plot 1
 pca_all_plot <- ggplot(data = ge_plast_all, aes(x = treat, y = dist, colour = treat)) + 
-  geom_point(position = position_dodge(width = 0.5)) + 
+  geom_point(position = position_dodge(width = 0.5), color = "lightpink1") + 
   geom_boxplot(alpha = 0.5, color = mycolors) +
   xlab("Treatment") +
   ggtitle("B)")
@@ -551,8 +551,8 @@ ge_plast_2 <-  PCAplast(pca = pcaData[6:31], # the PCA dataframe containing the 
 
 #plasticity plot2
 pca2_plot <- ggplot(data = ge_plast_2, aes(x = treat, y = dist, colour = treat)) + 
-  geom_point(position = position_dodge(width = 0.5)) + 
-  geom_boxplot(alpha = 0.5) +
+  geom_point(position = position_dodge(width = 0.5), color = "lightpink1") + 
+  geom_boxplot(alpha = 0.5, color = mycolors) +
   xlab("Treatment") +
   ggtitle("A)")
 
@@ -591,23 +591,25 @@ mean_se_plot <- ggplot(plasticity_means_se, aes(x=treat, y=mean_N, colour = trea
   geom_point() +
   geom_errorbar(aes(ymin=mean_N-se, ymax=mean_N+se), width=0.2, size=0.5) +
   ylab("Mean of Dist") +
-  ggtitle("C)")
+  ggtitle("C)") +
+  theme(legend.position = "none")
 
 mean_se_plot_all <- ggplot(plasticity1_means_se, aes(x=treat, y=mean_N, colour = treat)) + 
   geom_point() +
   geom_errorbar(aes(ymin=mean_N-se, ymax=mean_N+se), width=0.2, size=0.5) +
   ylab("Mean of Dist") +
-  ggtitle("D)")
+  ggtitle("D)") +
+  theme(legend.position = "none")
 
 ggarrange(pca2_plot, pca_all_plot, mean_se_plot, mean_se_plot_all)
 
 
 ```
 
-Assessment of plasticity (calculated as the average of the distances of each sample to the mean eigenvalue) in different treatments. N_400 was omitted due to _____. 
+Assessment of plasticity (A-D) calculated as the average of the distances of each sample to the mean eigenvalue. N_400 was omitted from this analysis due to (insert reason). A-B depicts box plots of plasticity and each individual sample as a point, while C-D shows the mean and standard error.
 
 ## Results
-There is no statistically significant difference in the means of plasticity across different treatments (p = 0.17). Overall, samples in high pCO2 (2800) and infected with sponge exhibited the highest plasticity. 
+Infected oyster samples in the 2800 pCO2 treatment exhibited the highest plasticity (Figure __), but results from the ANOVA test suggest this was not statistically significant (p = 0.17). Oysters not infected with sponge and in the 2800 treatment had the lowest plasticity (Figure _).
 
 <br/>
 <br/>
