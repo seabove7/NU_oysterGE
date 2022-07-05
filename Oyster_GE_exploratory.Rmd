@@ -113,7 +113,7 @@ if(length(not_installed)) install.packages(not_installed) # Install not installe
 
 library(tidyverse)
 library(dplyr)
-library(arrayQualityMetrics) # need special install above
+#library(arrayQualityMetrics) # need special install above
 library(ggplot2)
 library(readr)
 library(plotly)
@@ -254,7 +254,7 @@ save(dds, vsd, file = "Data/transformed_counts.RData")
 ```{r normalized count table}
 
 ## Load previously saved dds and vsd data 
-load("Data/transformed_counts.Rdata")
+load("Data/transformed_counts.RData")
 
 ## Normalize counts for table
 dds <- estimateSizeFactors(dds)
@@ -545,7 +545,7 @@ pca_all_plot <- ggplot(data = ge_plast_all, aes(x = treat, y = dist, colour = tr
 
 ge_plast_2 <-  PCAplast(pca = pcaData[6:31], # the PCA dataframe containing the PCA eigenvalues
                       data = pcaData[-6:-31], # the condition/treatment data corresponding to samples
-                      num_pca =  "all", # the number of PCAs to include in analysis (default is 'all', but you can specify another number with a minimum of 2 PCAs)
+                      num_pca =  "2", # the number of PCAs to include in analysis (default is 'all', but you can specify another number with a minimum of 2 PCAs)
                       control_col = "treat", # what the 'treatment' column is called
                       control_lvl = "N_400") # control level of the treatment. If blank, a control mean per level is assumed
 
@@ -555,7 +555,13 @@ pca2_plot <- ggplot(data = ge_plast_2, aes(x = treat, y = dist, colour = treat))
   geom_boxplot(alpha = 0.5, color = mycolors) +
   xlab("Treatment") +
   ggtitle("A)")
+```
 
+<br/>
+<br/>
+
+ANOVA tests on plasticity data
+``` {r}
 # ANOVA test
 res_aov <- aov(dist ~ treat,
   data = ge_plast_2
@@ -567,6 +573,12 @@ res_aov_all <- aov(dist ~ treat,
   data = ge_plast_all
 )
 summary(res_aov_all)
+```
+
+<br/>
+<br/>
+
+```{r}
 
 # calculate mean and standard error for ge_plast_1
 plasticity1_means_se <- ge_plast_all %>%  
@@ -606,7 +618,7 @@ ggarrange(pca2_plot, pca_all_plot, mean_se_plot, mean_se_plot_all)
 
 ```
 
-Assessment of plasticity (A-D) calculated as the average of the distances of each sample to the mean eigenvalue. N_400 was omitted from this analysis due to (insert reason). A-B depicts box plots of plasticity and each individual sample as a point, while C-D shows the mean and standard error.
+Assessment of plasticity (A-D) calculated as the average of the distances of each sample to the mean eigenvalue of the control (N_400). The control was omitted from this analysis. A) and C) pertains to analysis of all PCAs, while B) and D) contain analysis of 2 PCAs. A-B depicts box plots of plasticity and each individual sample as a point, while C-D shows the mean and standard error.
 
 ## Results
 Infected oyster samples in the 2800 pCO2 treatment exhibited the highest plasticity (Figure __), but results from the ANOVA test suggest this was not statistically significant (p = 0.17). Oysters not infected with sponge and in the 2800 treatment had the lowest plasticity (Figure _).
