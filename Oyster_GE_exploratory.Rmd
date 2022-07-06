@@ -513,7 +513,7 @@ ggsave("Figures/FigureXX_fullVens.png", width = 3, height = 2)
 
 ```{r}
 
-mycolors <- c("coral", "darkorange", "red")
+mycolors <- c("aquamarine3", "red", "darkorange")
 
 #### here is the code from the function without modifications:
 ## To run the function, enter the following objects:
@@ -627,6 +627,8 @@ res_aov_all <- aov(dist ~ treat,
 )
 summary(res_aov_all)
 
+res_aov_all
+
 TukeyHSD(res_aov_all, conf.level=.95)
 ```
 <br/>
@@ -656,18 +658,20 @@ plasticity_means_se <- ge_plast_2 %>%
 
 #plot means and standard error
 mean_se_plot <- ggplot(plasticity_means_se, aes(x=treat, y=mean_N, colour = treat)) + 
-  geom_point() +
-  geom_errorbar(aes(ymin=mean_N-se, ymax=mean_N+se), width=0.2, size=0.5) +
+  geom_point(color = mycolors) +
+  geom_errorbar(aes(ymin=mean_N-se, ymax=mean_N+se), width=0.2, size=0.5, color = mycolors) +
   ylab("Mean of Dist") +
   ggtitle("C)") +
-  theme(legend.position = "none")
+  theme(legend.position = "none") +
+  geom_point(data = ge_plast_2, x = ge_plast_2$treat, y = ge_plast_2$dist, color = "black")
 
 mean_se_plot_all <- ggplot(plasticity1_means_se, aes(x=treat, y=mean_N, colour = treat)) + 
-  geom_point() +
-  geom_errorbar(aes(ymin=mean_N-se, ymax=mean_N+se), width=0.2, size=0.5) +
+  geom_point(color = mycolors) +
+  geom_errorbar(aes(ymin=mean_N-se, ymax=mean_N+se), width=0.2, size=0.5, color = mycolors) +
   ylab("Mean of Dist") +
   ggtitle("D)") +
-  theme(legend.position = "none")
+  theme(legend.position = "none") +
+  geom_point(data = ge_plast_all, x = ge_plast_all$treat, y = ge_plast_all$dist, color = "black")
 
 ggarrange(pca2_plot, pca_all_plot, mean_se_plot, mean_se_plot_all)
 
@@ -677,7 +681,7 @@ ggarrange(pca2_plot, pca_all_plot, mean_se_plot, mean_se_plot_all)
 Assessment of plasticity (A-D) calculated as the average of the distances of each sample to the mean eigenvalue of the control (N_400). The control was omitted from this analysis. A) and C) pertains to analysis of all PCAs, while B) and D) contain analysis of 2 PCAs. A-B depicts box plots of plasticity and each individual sample as a point, while C-D shows the mean and standard error.
 
 ## Results
-Infected oyster samples in the 2800 pCO2 treatment exhibited the highest plasticity (Figure __), but results from the ANOVA test suggest this was not statistically significant (p = 0.17). Oysters not infected with sponge and in the 2800 treatment had the lowest plasticity (Figure _).
+Infected oyster samples in the 2800 pCO2 treatment exhibited the highest plasticity (Figure __), but results from the ANOVA test with all PCAs suggest this was not statistically significant (p = 0.17, F = .967). Oysters not infected with sponge and in the 2800 treatment had the lowest plasticity (Figure _).
 
 <br/>
 <br/>
