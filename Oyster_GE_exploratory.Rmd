@@ -560,7 +560,9 @@ pca2_plot <- ggplot(data = ge_plast_2, aes(x = treat, y = dist, colour = treat))
 <br/>
 <br/>
 
-ANOVA tests on plasticity data
+### ANOVA Tests on Plasticity Data
+
+ANOVA test on plasticity data with 2 PCAs (looking at variable treat to see if there is any significant difference of dist)
 ``` {r}
 # ANOVA test
 res_aov <- aov(dist ~ treat,
@@ -568,15 +570,69 @@ res_aov <- aov(dist ~ treat,
 )
 summary(res_aov)
 
+TukeyHSD(res_aov, conf.level=.95)
+```
+
+ANOVA test on plasticity data with all PCAs (looking at variable treat to see if there is any significant difference of dist)
+```{r}
 # ANOVA test ge_plast_all
 res_aov_all <- aov(dist ~ treat,
   data = ge_plast_all
 )
 summary(res_aov_all)
+
+TukeyHSD(res_aov_all, conf.level=.95)
 ```
 
 <br/>
 <br/>
+
+ANOVA test on plasticity data with all PCAs (looking at variable pCO2 * infect to see if there is any significant difference of dist)
+
+```{r}
+# ANOVA test ge_plast_all
+res_aov_pco2_infect <- aov(dist ~ pCO2 * infect,
+  data = ge_plast_all
+)
+summary(res_aov_pco2_infect)
+res_aov_pco2_infect
+
+TukeyHSD(res_aov_pco2_infect, conf.level=.95)
+```
+
+<br/>
+<br/>
+
+ANOVA test on plasticity data with all PCAs (looking at variable pCO2 * infect to see if there is any significant difference of dist)
+
+```{r}
+# ANOVA test ge_plast_2
+res_aov_two_pco2_infect <- aov(dist ~ pCO2 * infect,
+  data = ge_plast_2
+)
+summary(res_aov_two_pco2_infect)
+res_aov_two_pco2_infect
+
+TukeyHSD(res_aov_two_pco2_infect, conf.level=.95)
+```
+
+<br/>
+<br/>
+
+ANOVA test on plasticity data with all PCAs (looking at variable treat to see if there is any significant difference of dist)
+```{r}
+# ANOVA test ge_plast_all
+res_aov_all <- aov(dist ~ treat,
+  data = ge_plast_all
+)
+summary(res_aov_all)
+
+TukeyHSD(res_aov_all, conf.level=.95)
+```
+<br/>
+<br/>
+
+### Plasticity Plots
 
 ```{r}
 
