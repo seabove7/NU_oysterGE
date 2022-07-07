@@ -699,11 +699,9 @@ Infected oyster samples in the 2800 pCO2 treatment exhibited the highest plastic
 <br/>
 
 
-## Colleen adding in Gene Ontology for DESeq {.tabset}
+## GO for DESeq {.tabset}
 
-**ANGELA:** You will want to edit the below code to fit your data.
-
-```{r 32 cont v 3hr GO input, include = FALSE}
+```{r GO input, include = FALSE}
 
 ## create GO input dataframe
 GO_DEGs <- data.frame(rn = row.names(res_stn_pco2), res_stn_pco2) %>% # make results a dataframe with rownames as column
@@ -726,7 +724,6 @@ colnames(GO_DEGs_rename) <- NULL # remove the column names
 write.csv(GO_DEGs_rename, "GO_MWU/GO_files/DEG_GOinput.csv", row.names = FALSE, quote = FALSE) # save output
 
 ```
-
 
 ```{r GO_MWU for DEGs, eval = FALSE, include = FALSE}
 
@@ -866,6 +863,74 @@ for(d in divisions) {
     }
       }
 }
+
+```
+
+```{r GO terms PDF to PNG and plot, eval=FALSE, include=FALSE}
+
+library(pdftools)
+
+
+### Function to take PDF and convert to PNG
+
+PDF2plot <- function(path) {
+  
+  # Make a list of all filenames in selected directory
+  filenames <- list.files(path = path, pattern = "*.pdf") 
+  
+  ## Forloop to convert PDF images to PNGs, plot them, and then save them to list
+  for(i in 1:length(filenames)){
+    file_ext <- filenames[i] # pull file name (with extension)
+    file_name <- tools::file_path_sans_ext(file_ext) # file name withOUT extension
+    bitmap <- pdftools::pdf_render_page(paste0(path, file_ext), page = 1, dpi = 300) # render PDF image as bitmap
+    png::writePNG(bitmap, paste0(path, file_name, ".png")) # convert bitmap to .png and save in same directory
+  }
+  
+}
+
+################################################################################
+
+## Run PDF2plot function  
+PDF2plot(path = "GO_MWU/GO_figures/")
+
+```
+
+Example of a heatmap for a GO term
+```{r eval=FALSE, include=FALSE}
+
+gene <- read.delim("GO_MWU/GO_scripts/CVIR_iso2gene.tab", sep = "\t", header = FALSE) 
+
+
+## need to replace loci ID with sequence ID
+gene_rename <- left_join(gene, seq2iso, by = c("V1" = "V1")) %>% 
+  na.omit() %>% 
+  dplyr::select(V2.y, V2.x) %>% 
+  dplyr::rename("gene" = "V2.y", "gene_name" = "V2.x")
+
+
+iso2go <- read_tsv("GO_MWU/GO_scripts/CVIR_iso2go.tab", col_names = FALSE) %>% 
+  dplyr::rename("gene" = "X1", "GO_id" = "X2")
+
+
+GO_0005975 <- iso2go %>%
+  filter(str_detect(GO_id, "GO:0005975")) %>%
+  left_join(gene_rename) %>%
+  left_join(cold_rlog) %>%
+  mutate(gene_symbol = make.names(gene_symbol, unique = TRUE)) %>%
+  column_to_rownames(var = "gene_symbol") %>%
+  dplyr::select(-GO_id, -Gene, -Iso) %>%
+  drop_na()
+  #dplyr::select(sort(current_vars()))
+
+GO_0016459_cold_means = apply(GO_0016459_cold,1,mean) # means of rows
+explc = GO_0016459_cold-GO_0016459_cold_means # subtracting them
+
+# plot heatmap
+heatmap.2(as.matrix(GO_0016459_cold), col = cold_colour, Rowv = TRUE, Colv = FALSE, scale = "row",
+          dendrogram = "both",
+          trace = "none",
+          main = "GO:0016459 myosin complex",
+          margin = c(5,15))
 
 ```
 
