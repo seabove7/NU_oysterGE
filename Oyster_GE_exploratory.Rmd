@@ -708,7 +708,7 @@ Infected oyster samples in the 2800 pCO2 treatment exhibited the highest plastic
 ## create GO input dataframe
 GO_DEGs <- data.frame(rn = row.names(res_stn_pco2), res_stn_pco2) %>% # make results a dataframe with rownames as column
   mutate(mutated_p = -log(pvalue)) %>% # take neg log of the p values
-  mutate(mutated_p_updown = ifelse(log2FoldChange < 0, mutated_p * -1, mutated_p * 1)) %>% # change sign of data
+  mutate(mutated_p_updown = ifelse(log2FoldChange < 0, mutated_p * -1, mutated_p)) %>% # change sign of data
   dplyr::select(rn, mutated_p_updown) %>% # select gene and modified p value columns only
   na.omit()
 
@@ -739,7 +739,7 @@ write.csv(GO_DEGs, "GO_MWU/GO_files/DEG_GOinput.csv", row.names = FALSE, quote =
 
 ## Edit these to match your data file names: 
 goAnnotations = "CVIR_iso2go.tab" # two-column, tab-delimited, one line per gene, multiple GO terms separated by semicolon. If you have multiple lines per gene, use nrify_GOtable.pl prior to running this script.
-goDatabase = "GO_MWU/GO_scripts/go.obo" # download from http://www.geneontology.org/GO.downloads.ontology.shtml
+goDatabase = "GO_MWU/GO_scripts/go.obo" # download from http://www.geneontology.org/GO.downloads.ontology.shtml (downloaded 06 July 2022)
 iso_path = "GO_MWU/GO_scripts/" # path to GO MWU scripts
 trait_path = "GO_MWU/GO_files/" # path to module files
 GO_path = "GO_MWU/GO_files/Significant_GO_files/" # path to save module files with significant GO terms
@@ -759,7 +759,7 @@ source("GO_MWU/GO_scripts/gomwuFunctions_CBBedits.R")
 filenames <- list.files(trait_path, pattern="_GOinput.csv", full.names = FALSE)
 
 filename <- filenames %>% 
-  str_detect("CC_|MF_|BP_|MWU_", negate = TRUE) %>%  # this is important to not include the csv files from other runs
+  str_detect("CC_|MF_|BP_|MWU_|.tmp", negate = TRUE) %>%  # this is important to not include the csv files from other runs
   keep(filenames, .)
 
 divisions <- c("CC", "MF", "BP")
