@@ -536,9 +536,11 @@ ge_plast_all <-  PCAplast(pca = pcaData[6:31], # the PCA dataframe containing th
                       control_lvl = "N_400") # control level of the treatment. If blank, a control mean per level is assumed
 
 #plasticity plot 1
-pca_all_plot <- ggplot(data = ge_plast_all, aes(x = treat, y = dist, colour = treat)) + 
-  geom_point(position = position_dodge(width = 0.5), color = "lightpink1") + 
-  geom_boxplot(alpha = 0.5, color = mycolors) +
+pca_all_plot <- ggplot(data = ge_plast_all, aes(x = treat, y = dist, colour = treat, fill = treat)) + 
+  geom_point(position = position_dodge(width = 0.5), aes(color = treat)) + 
+  scale_colour_manual(values = mycolors) +
+  scale_fill_manual(values = mycolors) +
+  geom_boxplot(alpha = 0.2) +
   xlab("Treatment") +
   ggtitle("B)")
 
@@ -550,9 +552,11 @@ ge_plast_2 <-  PCAplast(pca = pcaData[6:31], # the PCA dataframe containing the 
                       control_lvl = "N_400") # control level of the treatment. If blank, a control mean per level is assumed
 
 #plasticity plot2
-pca2_plot <- ggplot(data = ge_plast_2, aes(x = treat, y = dist, colour = treat)) + 
-  geom_point(position = position_dodge(width = 0.5), color = "lightpink1") + 
-  geom_boxplot(alpha = 0.5, color = mycolors) +
+pca2_plot <- ggplot(data = ge_plast_2, aes(x = treat, y = dist, colour = treat, fill = treat)) + 
+  geom_point(position = position_dodge(width = 0.5), aes(color = treat)) + 
+  scale_colour_manual(values = mycolors) +
+  scale_fill_manual(values = mycolors) +
+  geom_boxplot(alpha = 0.2) +
   xlab("Treatment") +
   ggtitle("A)")
 ```
@@ -658,22 +662,24 @@ plasticity_means_se <- ge_plast_2 %>%
 
 #plot means and standard error
 mean_se_plot <- ggplot(plasticity_means_se, aes(x=treat, y=mean_N, colour = treat)) + 
-  geom_point(color = mycolors) +
+  geom_point(color = mycolors, size = 9, shape = "-") +
   geom_errorbar(aes(ymin=mean_N-se, ymax=mean_N+se), width=0.2, size=0.5, color = mycolors) +
+  scale_colour_manual(values = mycolors) +
   ylab("Mean of Dist") +
   ggtitle("C)") +
   theme(legend.position = "none") +
-  geom_point(data = ge_plast_2, x = ge_plast_2$treat, y = ge_plast_2$dist, color = "black")
+  geom_point(data = ge_plast_2, aes(x = treat, y = dist, color = treat), alpha = 0.3)
 
 mean_se_plot_all <- ggplot(plasticity1_means_se, aes(x=treat, y=mean_N, colour = treat)) + 
   geom_point(color = mycolors) +
   geom_errorbar(aes(ymin=mean_N-se, ymax=mean_N+se), width=0.2, size=0.5, color = mycolors) +
+  scale_colour_manual(values = mycolors) +
   ylab("Mean of Dist") +
   ggtitle("D)") +
   theme(legend.position = "none") +
-  geom_point(data = ge_plast_all, x = ge_plast_all$treat, y = ge_plast_all$dist, color = "black")
+  geom_point(data = ge_plast_all, aes(x = treat, y = dist, color = treat), alpha = 0.3)
 
-ggarrange(pca2_plot, pca_all_plot, mean_se_plot, mean_se_plot_all)
+ggarrange(pca2_plot, pca_all_plot, mean_se_plot, mean_se_plot_all, common.legend = TRUE)
 
 
 ```
@@ -685,6 +691,180 @@ Infected oyster samples in the 2800 pCO2 treatment exhibited the highest plastic
 
 <br/>
 <br/>
+
+
+## Colleen adding in Gene Ontology for DESeq {.tabset}
+
+**ANGELA:** You will want to edit the below code to fit your data.
+
+```{r 32 cont v 3hr GO input, include = FALSE}
+
+## create GO input dataframe
+GO_DEGs <- data.frame(rn = row.names(res_trt), res_trt) %>% # make results a dataframe with rownames as column
+  mutate(mutated_p = -log(pvalue)) %>% # take neg log of the p values
+  mutate(mutated_p_updown = ifelse(log2FoldChange < 0, mutated_p * -1, mutated_p * 1)) %>% # change sign of data
+  dplyr::select(rn, mutated_p_updown) %>% # select gene and modified p value columns only
+  na.omit()
+
+colnames(GO_DEGs) <- NULL # remove the column names
+
+write.csv(GO_DEGs, "GO_MWU/GO_files/DEG_GOinput.csv", row.names = FALSE, quote = FALSE) # save output
+
+```
+
+
+```{r GO_MWU for DEGs, eval = FALSE, include = FALSE}
+
+### The following code was created by Mikhail V. Matz (UT Austin, February 2015; matz@utexas.edu) but was modified by Colleen B Bove (January 2022; colleenbove@gmail.com) to loop through all files at once
+
+
+# GO_MWU uses continuous measure of significance (such as fold-change or -log(p-value) ) to identify GO categories that are significantly enriches with either up- or down-regulated genes. The advantage - no need to impose arbitrary significance cutoff.
+
+# If the measure is binary (0 or 1) the script will perform a typical "GO enrichment" analysis based Fisher's exact test: it will show GO categories over-represented among the genes that have 1 as their measure. 
+
+# On the plot, different fonts are used to indicate significance and color indicates enrichment with either up (red) or down (blue) regulated genes. No colors are shown for binary measure analysis.
+
+# The tree on the plot is hierarchical clustering of GO categories based on shared genes. Categories with no branch length between them are subsets of each other.
+
+# The fraction next to GO category name indicates the fracton of "good" genes in it; "good" genes being the ones exceeding the arbitrary absValue cutoff (option in gomwuPlot). For Fisher's based test, specify absValue=0.5. This value does not affect statistics and is used for plotting only.
+
+#####################################################################################
+
+
+## Edit these to match your data file names: 
+goAnnotations = "CVIR_iso2go.tab" # two-column, tab-delimited, one line per gene, multiple GO terms separated by semicolon. If you have multiple lines per gene, use nrify_GOtable.pl prior to running this script.
+goDatabase = "GO_MWU/GO_scripts/go.obo" # download from http://www.geneontology.org/GO.downloads.ontology.shtml
+iso_path = "GO_MWU/GO_scripts/" # path to GO MWU scripts
+trait_path = "GO_MWU/GO_files/" # path to module files
+GO_path = "GO_MWU/GO_files/Significant_GO_files/" # path to save module files with significant GO terms
+figure_out_path = "GO_MWU/GO_figures/" # path where to save GO trees
+
+# source the modified code
+source("GO_MWU/GO_scripts/gomwuFunctions_CBBedits.R")
+
+
+
+#####################################################################################
+############################## GO enrichment analysis ###############################
+#####################################################################################
+
+## Pull all filenames for the GO files
+# two columns of comma-separated values: gene id, continuous measure of significance. To perform standard GO enrichment analysis based on Fisher's exact test, use binary measure (0 or 1, i.e., either significant or not).
+filenames <- list.files(trait_path, pattern="_GOinput.csv", full.names = FALSE)
+
+filename <- filenames %>% 
+  str_detect("CC_|MF_|BP_|MWU_", negate = TRUE) %>%  # this is important to not include the csv files from other runs
+  keep(filenames, .)
+
+divisions <- c("CC", "MF", "BP")
+
+for(d in divisions) {
+  
+  goDivision <- d # set the division
+  
+  for(f in filename) {
+    
+    input <- f # the input file name
+    
+    # Calculating stats
+    gomwuStats(input, goDatabase, goAnnotations, goDivision, iso_path, trait_path,
+               largest=0.1,  # a GO category will not be considered if it contains more than this fraction of the total number of genes
+               smallest=5,   # a GO category should contain at least this many genes to be considered
+               clusterCutHeight=0.01, # threshold for merging similar (gene-sharing) terms. See README for details.
+               #	Alternative="g" # by default the MWU test is two-tailed; specify "g" or "l" of you want to test for "greater" or "less" instead.
+               #Module=TRUE,Alternative="g" # un-remark this if you are analyzing a SIGNED WGCNA module (values: 0 for not in module genes, kME for in-module genes). In the call to gomwuPlot below, specify absValue=0.001 (count number of "good genes" that fall into the module)
+               #	Module=TRUE # un-remark this if you are analyzing an UNSIGNED WGCNA module 
+    )
+    
+  }
+}
+
+
+
+#####################################################################################
+### Identify modules with significant GO terms and save those terms to new folder ###
+#####################################################################################
+
+filenames <- list.files(trait_path, pattern="*_GOinput.csv", full.names = FALSE)
+
+# selects the correct files for significant GO terms
+filenames_sig <- filenames %>% 
+  str_detect("\\MWU_", negate = FALSE) %>%
+  keep(filenames, .)
+
+for(f in filenames_sig) {
+  mwu_file <- f
+  mwu_out <- read.table(paste(trait_path, mwu_file, sep = ""), sep = " ", header = TRUE)
+  
+  str_name <- unlist(str_split(mwu_file, "_")) # split up the file name string
+  goDivision <- str_name %>% str_detect("\\CC|\\MF|\\BP", negate = FALSE) %>% keep(str_name, .) # keep MWU files 
+  sig_GO <- mwu_out[mwu_out$p.adj < 0.1, ] # pull the significant GO terms per module file
+  GO_output <- paste(GO_path, str_name[2], "_", str_name[3], "_GOinput_sigGO.tsv", sep = "") # set the save path
+  
+  # saves files to path for significant GO terms
+  if (nrow(sig_GO) > 0){
+    sig_GO %>%  write_csv(file = GO_output)
+  }
+  
+}
+
+
+
+#####################################################################################
+############## Plot significant GO term trees from identified modules ###############
+#####################################################################################
+
+sig_files_plot <- list.files(GO_path, pattern = "*.tsv", full.names = FALSE)
+
+divisions <- c("CC", "MF", "BP")
+
+for(d in divisions) {
+  #d = "CC"
+  goDivision <- d # set the division
+  
+  for (f in sig_files_plot){
+    input <- f
+    str_name <- unlist(str_split(input, "_")) # split up the file name string
+    GO_fig_path <- paste(figure_out_path, str_name[1], "_", str_name[2], "_tree.pdf", sep = "")
+    
+    num_terms <- nrow(read.table(paste0(GO_path, input), sep = ",")) # count # of terms for tree height
+    
+    # setting conditions of colours so each experiment has own theme
+   # if(grepl(str_name[2], pattern = "32C")) {cols <- c("#969696","#6a51a3","#d9d9d9", "#d8daeb")} else {cols <- c("#969696","#e08214","#d9d9d9","#fee0b6")}
+ 
+    
+    if(num_terms >= 3) {
+      pdf(GO_fig_path, height = ifelse(num_terms > 3, (num_terms/7), 0.65), width = 5, useDingbats = FALSE)
+      gomwuPlot(input, goAnnotations, goDivision, iso_path, trait_path, GO_path,
+                # absValue=0.001, # -log(0.05,10),  # genes with the measure value exceeding this will be counted as "good genes". This setting is for signed log-pvalues. Specify absValue=0.001 if you are doing Fisher's exact test for standard GO enrichment or analyzing a WGCNA module (all non-zero genes = "good genes").
+                absValue=1, # un-remark this if you are using log2-fold changes
+                level1=0.05, # FDR threshold for plotting. Specify level1=1 to plot all GO categories containing genes exceeding the absValue.
+                level2=0.01, # FDR cutoff to print in regular (not italic) font.
+                level3=0.001, # FDR cutoff to print in large bold font.
+                txtsize=1,    # decrease to fit more on one page, or increase (after rescaling the plot so the tree fits the text) for better "word cloud" effect
+                treeHeight=0.5#, # height of the hierarchical clustering tree
+                #colors = cols
+      )
+      dev.off()
+    } else {
+      print(paste(gsub("_sigGO.tsv", "", input), "contains fewer than 3 GO terms, no tree produced"))
+    }
+      }
+}
+
+```
+
+<br/>
+<br/>
+
+
+## Colleen adding in WGCNA
+
+*It will go here*
+
+<br/>
+<br/>
+
   
 ## Session Information
 
