@@ -712,9 +712,18 @@ GO_DEGs <- data.frame(rn = row.names(res_stn_pco2), res_stn_pco2) %>% # make res
   dplyr::select(rn, mutated_p_updown) %>% # select gene and modified p value columns only
   na.omit()
 
-colnames(GO_DEGs) <- NULL # remove the column names
 
-write.csv(GO_DEGs, "GO_MWU/GO_files/DEG_GOinput.csv", row.names = FALSE, quote = FALSE) # save output
+## need to rename the gene IDs with the names in the GO  file
+seq2iso <- read.table("GO_MWU/GO_scripts/CVIR_seq2iso.tab")
+
+GO_DEGs_rename <- left_join(GO_DEGs, seq2iso, by = c("rn" = "V1")) %>% 
+  na.omit() %>% 
+  dplyr::select(V2, mutated_p_updown)
+
+colnames(GO_DEGs_rename) <- NULL # remove the column names
+
+
+write.csv(GO_DEGs_rename, "GO_MWU/GO_files/DEG_GOinput.csv", row.names = FALSE, quote = FALSE) # save output
 
 ```
 
@@ -747,6 +756,10 @@ figure_out_path = "GO_MWU/GO_figures/" # path where to save GO trees
 
 # source the modified code
 source("GO_MWU/GO_scripts/gomwuFunctions_CBBedits.R")
+
+
+## to set custom colours
+cols <- c("#969696","#e08214","#d9d9d9","#fee0b6")
 
 
 
@@ -835,10 +848,6 @@ for(d in divisions) {
     
     num_terms <- nrow(read.table(paste0(GO_path, input), sep = ",")) # count # of terms for tree height
     
-    # setting conditions of colours so each experiment has own theme
-   # if(grepl(str_name[2], pattern = "32C")) {cols <- c("#969696","#6a51a3","#d9d9d9", "#d8daeb")} else {cols <- c("#969696","#e08214","#d9d9d9","#fee0b6")}
- 
-    
     if(num_terms >= 3) {
       pdf(GO_fig_path, height = ifelse(num_terms > 3, (num_terms/7), 0.65), width = 5, useDingbats = FALSE)
       gomwuPlot(input, goAnnotations, goDivision, iso_path, trait_path, GO_path,
@@ -848,8 +857,8 @@ for(d in divisions) {
                 level2=0.01, # FDR cutoff to print in regular (not italic) font.
                 level3=0.001, # FDR cutoff to print in large bold font.
                 txtsize=1,    # decrease to fit more on one page, or increase (after rescaling the plot so the tree fits the text) for better "word cloud" effect
-                treeHeight=0.5#, # height of the hierarchical clustering tree
-                #colors = cols
+                treeHeight=0.5, # height of the hierarchical clustering tree
+                colors = cols
       )
       dev.off()
     } else {
