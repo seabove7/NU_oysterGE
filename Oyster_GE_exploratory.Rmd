@@ -759,7 +759,7 @@ source("GO_MWU/GO_scripts/gomwuFunctions_CBBedits.R")
 
 
 ## to set custom colours
-cols <- c("#969696","#e08214","#d9d9d9","#fee0b6")
+cols <- c("dodgerblue2","firebrick1","skyblue2","lightcoral")
 
 
 
