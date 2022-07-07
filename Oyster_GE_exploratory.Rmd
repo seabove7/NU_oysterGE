@@ -177,6 +177,7 @@ ggplot(data = sizeFactors, aes(x = sample, y = sizeFactors, fill = treat)) +
   ggtitle("Unfiltered sizeFactors")
 
 ```
+Figure 1: Size factors of initial oyster samples in the study, calculated using oyster gene count data.
 
 After viewing the size factors, it appears that we have 5 samples with really low values that should be removed:
 
@@ -226,6 +227,8 @@ ggplot(data = sizeFactors_filter, aes(x = sample, y = sizeFactors, fill = treat)
   ggtitle("Filtered sizeFactors")
 
 ```
+
+Figure 2: Size factors of oyster samples remaining in the study after 5 outliers were removed, calculated using oyster gene count data.
 
 Without filtering low reads, we had a total of **`r nrow`** counts. After filtering out the low counts (those with a base mean less than 3), we now have **`r  nrow_filter`** counts remaining for all *C. virginica* samples.
 
@@ -306,7 +309,7 @@ ggsave("Figures/FigureXX_GEpca.png", width = 6, height = 4)
 
 ```
 
-PCA plot with each point being one oyster sample colored by treatment. Orange represents the control treatment (no boring sponge, pCO2 level 400), green represents no sponge, pCO2 level 2800, purple represents samples infected with boring sponge at pCO2 2800, and pink represents samples infected with boring sponge at pCO2 400.
+Figure 3: PCA plot with each point being one oyster sample colored by treatment. Orange represents the control treatment (no boring sponge, pCO2 level 400), green represents no sponge, pCO2 level 2800, purple represents samples infected with boring sponge at pCO2 2800, and pink represents samples infected with boring sponge at pCO2 400.
 
 <br/>
 <br/>
@@ -467,6 +470,8 @@ ggsave("Figures/FigureXX_PairedVens.pdf", width = 4, height = 4)
 ggsave("Figures/FigureXX_PairedVens.png", width = 4, height = 4)
 
 ```
+Figure 4: Venn diagrams depicting number of shared significantly up-regulated / down-regulated genes. Orange venn diagrams depict up-regulated genes, while blue depicts down-regulated genes. 
+
 <br/>
 <br/>
 
@@ -504,6 +509,7 @@ ggsave("Figures/FigureXX_fullVens.pdf", width = 3, height = 2)
 ggsave("Figures/FigureXX_fullVens.png", width = 3, height = 2)
 
 ```
+Figure 5: left: four-way venn diagram showing relationships among up-regulated genes between different treatment comparisons. right: venn diagram showing relationships among down-regulated genes between treatment comparisons with significantly down-regulated genes.
 
 <br/>
 <br/>
@@ -700,7 +706,7 @@ Infected oyster samples in the 2800 pCO2 treatment exhibited the highest plastic
 ```{r 32 cont v 3hr GO input, include = FALSE}
 
 ## create GO input dataframe
-GO_DEGs <- data.frame(rn = row.names(res_trt), res_trt) %>% # make results a dataframe with rownames as column
+GO_DEGs <- data.frame(rn = row.names(res_stn_pco2), res_stn_pco2) %>% # make results a dataframe with rownames as column
   mutate(mutated_p = -log(pvalue)) %>% # take neg log of the p values
   mutate(mutated_p_updown = ifelse(log2FoldChange < 0, mutated_p * -1, mutated_p * 1)) %>% # change sign of data
   dplyr::select(rn, mutated_p_updown) %>% # select gene and modified p value columns only
