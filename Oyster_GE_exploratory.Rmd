@@ -177,6 +177,7 @@ ggplot(data = sizeFactors, aes(x = sample, y = sizeFactors, fill = treat)) +
   ggtitle("Unfiltered sizeFactors")
 
 ```
+
 Figure 1: Size factors of initial oyster samples in the study, calculated using oyster gene count data.
 
 After viewing the size factors, it appears that we have 5 samples with really low values that should be removed:
@@ -414,6 +415,8 @@ ggsave("Figures/FigureXX_DEGsBar.png", width = 6, height = 4)
 
 ```
 
+Figure: Bar plot of significant DEGs. The y axis denotes how many genes there are, with positive values being up-regulated genes, and negative values denoting down-regulated genes. 
+
 <br/>
 <br/>
 
@@ -470,6 +473,7 @@ ggsave("Figures/FigureXX_PairedVens.pdf", width = 4, height = 4)
 ggsave("Figures/FigureXX_PairedVens.png", width = 4, height = 4)
 
 ```
+
 Figure 4: Venn diagrams depicting number of shared significantly up-regulated / down-regulated genes. Orange venn diagrams depict up-regulated genes, while blue depicts down-regulated genes. 
 
 <br/>
@@ -509,6 +513,7 @@ ggsave("Figures/FigureXX_fullVens.pdf", width = 3, height = 2)
 ggsave("Figures/FigureXX_fullVens.png", width = 3, height = 2)
 
 ```
+
 Figure 5: left: four-way venn diagram showing relationships among up-regulated genes between different treatment comparisons. right: venn diagram showing relationships among down-regulated genes between treatment comparisons with significantly down-regulated genes.
 
 <br/>
@@ -690,7 +695,7 @@ ggarrange(pca2_plot, pca_all_plot, mean_se_plot, mean_se_plot_all, common.legend
 
 ```
 
-Assessment of plasticity (A-D) calculated as the average of the distances of each sample to the mean eigenvalue of the control (N_400). The control was omitted from this analysis. A) and C) pertains to analysis of all PCAs, while B) and D) contain analysis of 2 PCAs. A-B depicts box plots of plasticity and each individual sample as a point, while C-D shows the mean and standard error.
+Figure 6: Assessment of plasticity (A-D) calculated as the average of the distances of each sample to the mean eigenvalue of the control (N_400). The control was omitted from this analysis. A) and C) pertains to analysis of all PCAs, while B) and D) contain analysis of 2 PCAs. A-B depicts box plots of plasticity and each individual sample as a point, while C-D shows the mean and standard error.
 
 ## Results
 Infected oyster samples in the 2800 pCO2 treatment exhibited the highest plasticity (Figure __), but results from the ANOVA test with all PCAs suggest this was not statistically significant (p = 0.17, F = .967). Oysters not infected with sponge and in the 2800 treatment had the lowest plasticity (Figure _).
@@ -704,7 +709,7 @@ Infected oyster samples in the 2800 pCO2 treatment exhibited the highest plastic
 ```{r GO input, include = FALSE}
 
 ## create GO input dataframe
-GO_DEGs <- data.frame(rn = row.names(res_stn_pco2), res_stn_pco2) %>% # make results a dataframe with rownames as column
+GO_DEGs <- data.frame(rn = row.names(res_trt), res_trt) %>% # make results a dataframe with rownames as column
   mutate(mutated_p = -log(pvalue)) %>% # take neg log of the p values
   mutate(mutated_p_updown = ifelse(log2FoldChange < 0, mutated_p * -1, mutated_p)) %>% # change sign of data
   dplyr::select(rn, mutated_p_updown) %>% # select gene and modified p value columns only
@@ -916,17 +921,17 @@ GO_0005975 <- iso2go %>%
   filter(str_detect(GO_id, "GO:0005975")) %>%
   left_join(gene_rename) %>%
   left_join(cold_rlog) %>%
-  mutate(gene_symbol = make.names(gene_symbol, unique = TRUE)) %>%
-  column_to_rownames(var = "gene_symbol") %>%
-  dplyr::select(-GO_id, -Gene, -Iso) %>%
+  #mutate(gene_symbol = make.names(gene_symbol, unique = TRUE)) %>%
+  #column_to_rownames(var = "gene_symbol") %>%
+  #dplyr::select(-GO_id, -Gene, -Iso) %>%
   drop_na()
   #dplyr::select(sort(current_vars()))
 
-GO_0016459_cold_means = apply(GO_0016459_cold,1,mean) # means of rows
-explc = GO_0016459_cold-GO_0016459_cold_means # subtracting them
+GO_0016459_cold_means = apply(GO_0005975,1,mean) # means of rows
+explc = GO_0005975-GO_0016459_cold_means # subtracting them
 
 # plot heatmap
-heatmap.2(as.matrix(GO_0016459_cold), col = cold_colour, Rowv = TRUE, Colv = FALSE, scale = "row",
+heatmap.2(as.matrix(GO_0005975), col = cold_colour, Rowv = TRUE, Colv = FALSE, scale = "row",
           dendrogram = "both",
           trace = "none",
           main = "GO:0016459 myosin complex",
