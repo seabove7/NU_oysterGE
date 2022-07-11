@@ -239,7 +239,7 @@ Without filtering low reads, we had a total of **`r nrow`** counts. After filter
 
 ### PCA plots of Global Gene Expression 
 
-```{r dds model and save, eval = FALSE, echo=TRUE}
+```{r dds model and save, eval = FALSE, echo = TRUE}
 
 # going to use the filter_counts_out object created above because it is filtered for low reads and has outliers removed
 
@@ -248,16 +248,20 @@ dds <- DESeqDataSetFromMatrix(countData = filter_counts_out,
                               colData = expDesign,
                               design = ~ treat)
 dds <- DESeq(dds) # differential expression analysis on gamma-poisson distribution
-vsd <-varianceStabilizingTransformation(dds, blind = TRUE) # quickly estimate dispersion trend and apply a variance stabilizing transformation
+vsd <- varianceStabilizingTransformation(dds, blind = TRUE) # quickly estimate dispersion trend and apply a variance stabilizing transformation
+
+## saving the rlog for DEG heatmap
+rlog <- DESeq2::rlog(dds, blind = TRUE) #for use later on
+
 
 ## Save dds and vsd data 
-save(dds, vsd, file = "Data/transformed_counts.RData")
+save(dds, vsd, rlog, file = "Data/transformed_counts.RData")
 
 ```
 
 ```{r normalized count table}
 
-## Load previously saved dds and vsd data 
+## Load previously saved dds, vsd, and rlog data 
 load("Data/transformed_counts.RData")
 
 ## Normalize counts for table
@@ -835,7 +839,7 @@ for(f in filenames_sig) {
 ############## Plot significant GO term trees from identified modules ###############
 #####################################################################################
 
-sig_files_plot <- list.files(GO_path, pattern = "*.tsv", full.names = FALSE)
+sig_files <- list.files(GO_path, pattern = "*.tsv", full.names = FALSE)
 
 divisions <- c("CC", "MF", "BP")
 
@@ -843,15 +847,19 @@ for(d in divisions) {
   #d = "CC"
   goDivision <- d # set the division
   
+  sig_files_plot <- sig_files %>% 
+    str_detect(goDivision, negate = FALSE) %>%
+    keep(sig_files, .)
+  
   for (f in sig_files_plot){
     input <- f
     str_name <- unlist(str_split(input, "_")) # split up the file name string
-    GO_fig_path <- paste(figure_out_path, str_name[1], "_", str_name[2], "_tree.pdf", sep = "")
+    GO_fig_path <- paste(figure_out_path, str_name[1], "_", str_name[2], "_tree.png", sep = "")
     
     num_terms <- nrow(read.table(paste0(GO_path, input), sep = ",")) # count # of terms for tree height
     
     if(num_terms >= 3) {
-      pdf(GO_fig_path, height = ifelse(num_terms > 3, (num_terms/7), 0.65), width = 5, useDingbats = FALSE)
+      png(GO_fig_path, height = ifelse(num_terms > 3, (num_terms/7), 0.65), width = 5, units = "in", res = 1200)
       gomwuPlot(input, goAnnotations, goDivision, iso_path, trait_path, GO_path,
                 # absValue=0.001, # -log(0.05,10),  # genes with the measure value exceeding this will be counted as "good genes". This setting is for signed log-pvalues. Specify absValue=0.001 if you are doing Fisher's exact test for standard GO enrichment or analyzing a WGCNA module (all non-zero genes = "good genes").
                 absValue=1, # un-remark this if you are using log2-fold changes
@@ -871,71 +879,197 @@ for(d in divisions) {
 
 ```
 
-```{r GO terms PDF to PNG and plot, eval=FALSE, include=FALSE}
+### Figure SX
 
-library(pdftools)
+**All significant GO terms identified from DEGs:**
 
+```{r add all GO terms to markdown from PNG, results='asis', fig.align = 'center', out.width = '80%'}
 
-### Function to take PDF and convert to PNG
+files <- list.files(path = "GO_MWU/GO_figures", pattern = "png", full.names = TRUE)
 
-PDF2plot <- function(path) {
-  
-  # Make a list of all filenames in selected directory
-  filenames <- list.files(path = path, pattern = "*.pdf") 
-  
-  ## Forloop to convert PDF images to PNGs, plot them, and then save them to list
-  for(i in 1:length(filenames)){
-    file_ext <- filenames[i] # pull file name (with extension)
-    file_name <- tools::file_path_sans_ext(file_ext) # file name withOUT extension
-    bitmap <- pdftools::pdf_render_page(paste0(path, file_ext), page = 1, dpi = 300) # render PDF image as bitmap
-    png::writePNG(bitmap, paste0(path, file_name, ".png")) # convert bitmap to .png and save in same directory
-  }
-  
+for (f in files) {
+  file_name <- tools::file_path_sans_ext(f) # file name without extension
+  file_name <- gsub("GO_MWU/GO_figures/", "", file_name) # remove extension for file name 
+  cat(paste0(file_name, ":"))
+  cat(paste0("![", file_name,"](", f, ")\n"))
 }
-
-################################################################################
-
-## Run PDF2plot function  
-PDF2plot(path = "GO_MWU/GO_figures/")
 
 ```
 
-Example of a heatmap for a GO term
-```{r eval=FALSE, include=FALSE}
+
+### Example of a heatmap for a GO term
+
+Trying Dan's way...
+```{r}
 
 gene <- read.delim("GO_MWU/GO_scripts/CVIR_iso2gene.tab", sep = "\t", header = FALSE) 
-
-
-## need to replace loci ID with sequence ID
-gene_rename <- left_join(gene, seq2iso, by = c("V1" = "V1")) %>% 
-  na.omit() %>% 
-  dplyr::select(V2.y, V2.x) %>% 
-  dplyr::rename("gene" = "V2.y", "gene_name" = "V2.x")
-
 
 iso2go <- read_tsv("GO_MWU/GO_scripts/CVIR_iso2go.tab", col_names = FALSE) %>% 
   dplyr::rename("gene" = "X1", "GO_id" = "X2")
 
 
-GO_0005975 <- iso2go %>%
-  filter(str_detect(GO_id, "GO:0005975")) %>%
-  left_join(gene_rename) %>%
-  left_join(cold_rlog) %>%
-  #mutate(gene_symbol = make.names(gene_symbol, unique = TRUE)) %>%
-  #column_to_rownames(var = "gene_symbol") %>%
-  #dplyr::select(-GO_id, -Gene, -Iso) %>%
-  drop_na()
-  #dplyr::select(sort(current_vars()))
+sig_trt_DEGs <- data.frame(loci = res_trt@rownames, res_trt@listData) %>%
+  left_join(seq2iso, by = c("loci" = "V1")) %>% 
+  dplyr::rename("gene" = "V2") %>% 
+  left_join(iso2go, by = c("gene" = "gene")) %>% 
+  left_join(data.frame(loci = rownames(assay(rlog)), assay(rlog))) %>%
+  left_join(gene,  by = c("loci" = "V1")) %>% 
+  filter(padj < 0.1) %>% 
+  distinct(loci, .keep_all = TRUE) %>% 
+  column_to_rownames(var = "V2")
 
-GO_0016459_cold_means = apply(GO_0005975,1,mean) # means of rows
-explc = GO_0005975-GO_0016459_cold_means # subtracting them
+
+
+library(gplots)
 
 # plot heatmap
-heatmap.2(as.matrix(GO_0005975), col = cold_colour, Rowv = TRUE, Colv = FALSE, scale = "row",
-          dendrogram = "both",
+heatmap.2(as.matrix(sig_trt_DEGs[10:35]), scale = "row",
+          #dendrogram = "both",
           trace = "none",
-          main = "GO:0016459 myosin complex",
+          #main = "GO:0016459 myosin complex",
           margin = c(5,15))
+
+```
+
+### All the other heatmaps!
+
+```{r}
+# launch heatmapEveryWhichWay.R to use this
+uniHeatmap=function(vsd,gene.names,metric,cutoff,metric2=NA,sort=NA,pdf=TRUE,pdf.height=15,pdf.width=12,named=TRUE,pattern=NA,heat.color=colorRampPalette(rev(c("chocolate1","#FEE090","grey10", "cyan3","cyan")))(100),...) {
+
+	# vsd=vsd
+	# gene.names=gg
+	# metric=result$adjp.su
+	# cutoff=1e-1
+	# sort=order(surv$survival)  # overrides sorting of columns according to hierarchical clustering
+	# pattern="TNF"
+	# cex=0.9
+	# pdf=FALSE  
+	# metric2=NA
+	# named=T
+	# heat.color=colorRampPalette(rev(c("chocolate1","#FEE090","grey10", "cyan3","cyan")))(100)
+
+
+	require(pheatmap)
+	num.total=0
+	select=(metric<=cutoff)
+	if (!is.na(metric2)) {
+		select=metric/(metric2<=cutoff)
+	} 
+	pdfname=paste(cutoff,"_heatmap.pdf",sep="")
+	hmap=vsd[select,]
+	hmap=hmap[!is.na(row.names(hmap)),]
+#	length(hmap[,1])
+	num.total=length(hmap[,1])
+	
+	# attaching gene names
+	gnames=c();counts=0;num.match=0;num.named=0
+	for(i in 1:length(hmap[,1])) {
+		if (row.names(hmap)[i] %in% gene.names$V1) { 
+			counts=counts+1
+			gn=as.character(gene.names[gene.names$V1==row.names(hmap)[i],2])
+			if (gn %in% gnames) {
+				gn=paste(gn,counts,sep=".")
+			}
+			gnames=append(gnames,gn) 
+		} else { 
+			gnames=append(gnames,i)
+		}
+	} 
+	row.names(hmap)=gnames
+	if (named==TRUE) {
+		#selecting only named genes
+		hmap.n=hmap[grep('[a-z]',row.names(hmap)),]
+		num.named=length(hmap.n[,1])
+	}
+	
+	if (!is.na(pattern)){
+		hmap.n=hmap[grep(pattern,gnames),]
+		num.match=length(hmap.n[,1])
+	}
+
+	if (named==TRUE){
+		pdfname=paste("named_",pdfname,sep="")
+		if (pdf== TRUE) { pdf(pdfname,height=pdf.height,width=pdf.width) }
+		if (!is.na(sort[1])) {
+			hmap.n=hmap.n[,sort]
+			pheatmap(hmap.n,scale="row",color=heat.color,border_color=NA,
+				clustering_distance_rows="correlation",
+				cluster_cols=F,...)
+		} else {
+			pheatmap(hmap.n,scale="row",color=heat.color,border_color=NA,
+				 clustering_distance_rows="correlation",
+				 clustering_distance_cols="correlation",
+				 ...
+				)
+		}
+		if (pdf==TRUE) { dev.off() }
+	} else { 
+		if (pdf== TRUE) { pdf(pdfname,height=pdf.height,width=pdf.width) }
+		if (!is.na(sort)) {
+			hmap=hmap[,order(sort)]
+			pheatmap(hmap,scale="row",color=heat.color,border_color=NA,
+				clustering_distance_rows="correlation",
+				cluster_cols=F,...)
+		} else {
+			pheatmap(hmap,scale="row",color=heat.color,border_color=NA,
+				 clustering_distance_rows="correlation",
+				 clustering_distance_cols="correlation",
+				 ...
+				)
+		}
+		if (pdf== TRUE) { dev.off() }
+	}
+	return(c(num.total,num.named,num.match))
+}
+
+```
+
+
+```{r fig.height = 6, fig.width =14}
+
+library(RColorBrewer)
+library(pheatmap)
+
+# let's take a look at some heatmaps
+# scale values
+means <- apply(assay(vsd),1,mean) # means of rows
+norm_df_scaled <- assay(vsd)-means # rescale expression data so it's up and down
+
+df <- as.data.frame(colData(dds)[c("pCO2", "infect")])
+rownames(df) <- dds@colData@rownames
+
+#display.brewer.pal(n = 4, name = 'PRGn')
+#brewer.pal(n = 4, name = "PRGn")
+ann_colors <- list(
+  infect = c(N = "#A6DBA0", S = "#008837"),
+  pCO2 = c(`400` = "#C2A5CF", `2800`= "#7B3294")
+)
+
+
+
+res_trt$threshold <- as.logical(res_trt$padj < 0.1)
+
+# Sort the results tables
+res_sorted <- res_trt[order(res_trt$padj), ]
+
+# Get significant genes
+sigTrmt <- row.names(res_sorted)[which(res_sorted$threshold)]
+
+
+heat_df <- data.frame(norm_df_scaled[sigTrmt,]) %>% 
+  mutate(loci = rownames(data.frame(norm_df_scaled[sigTrmt,]))) %>% 
+  left_join(gene,  by = c("loci" = "V1")) %>% 
+  distinct(loci, .keep_all = TRUE)
+
+rownames(heat_df) <- heat_df$V2
+
+heat_df <- as.matrix(heat_df[-27:-28])
+
+
+# treatment DEGs
+col=color= colorRampPalette(rev(c('darkred', 'white', 'blue')),bias=0.8)(30)
+pheatmap(heat_df, color = col, cluster_cols = TRUE, clustering_distance_rows = "correlation", show_rownames = TRUE, annotation_col = df, annotation_colors = ann_colors)  
 
 ```
 
