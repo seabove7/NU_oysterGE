@@ -130,6 +130,11 @@ library(WGCNA)
 
 source("Code/CustomFunctions.R")
 
+#color scheme throughout
+#n2800 n400 s2800 s400
+color_scheme <- c("#fdae61", "#abd9e9", "#d7191c", "#2c7bb6")
+
+
 ```
 
 
@@ -174,7 +179,8 @@ sizeFactors <- data.frame(sample = counts_SF@colData@listData[["Sample_ID"]], tr
 ggplot(data = sizeFactors, aes(x = sample, y = sizeFactors, fill = treat)) +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 90)) +
-  scale_fill_brewer(palette = 2, type = "qual") +
+  scale_fill_manual(values=color_scheme) +
+  #scale_fill_brewer(palette = 2, type = "qual") +
   geom_bar(stat = "identity") +
   ggtitle("Unfiltered sizeFactors")
 
@@ -225,7 +231,8 @@ sizeFactors_filter <-  data.frame(sample = counts_SF_filter@colData@listData[["S
 ggplot(data = sizeFactors_filter, aes(x = sample, y = sizeFactors, fill = treat)) +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 90)) +
-  scale_fill_brewer(palette = 2, type = "qual") +
+  scale_fill_manual(values=color_scheme) +
+  #scale_fill_brewer(palette = 2, type = "qual") +
   geom_bar(stat = "identity") +
   ggtitle("Filtered sizeFactors")
 
