@@ -1086,7 +1086,7 @@ pheatmap(heat_df, color = col, cluster_cols = TRUE, clustering_distance_rows = "
 <br/>
 
 
-## Colleen adding in WGCNA
+## Colleen adding in WGCNA {.tabset}
 
 ```{r saving filtered count data for WGCNA, message=FALSE, warning=FALSE, include=FALSE}
 
@@ -1188,6 +1188,7 @@ traits <- cbind(`High pCO2`, `Infected`, `N_400`, `S_400`, `N_2800`, `S_2800`, e
 
 ```
 
+### Mean expression across samples
 ```{r WGCNA outlier detection, message=FALSE, warning=FALSE}
 
 ## outlier detection and removal
@@ -1208,6 +1209,7 @@ barplot(meanExpressionByArray,
 
 ```
 
+### Dendrogram with sample traits
 ```{r WGCNA outlier dendrogram, fig.height=13, fig.width=12}
 
 # sample dendrogram and trait heat map showing outliers
@@ -1239,6 +1241,286 @@ traits <- traits[!remove_samples,]
 
 ## save updated WGCNA data/trait matrix with outliers removed
 save(datt, traits, file = "WGCNA/WGCNA_data/wgcnaData_outlier.RData")
+```
+One sample (19611) was flagged as an outlier and removed.
+
+```{r threshold selection and plot, fig.height=5, fig.width=12}
+
+## This loads the updated WGCNA data from above with the two outlier samples removed
+#load("WGCNA/WGCNA_data/wgcnaData_outlier.RData")
+
+
+# Try different betas ("soft threshold") - power factor for calling connections between genes
+powers <- c(c(1:10), seq(from = 12, to = 20, by = 2))
+
+# Call the network topology analysis function
+sft <- pickSoftThreshold(datt, powerVector = powers, verbose = 5, networkType = "signed")
+
+# Plot the results:
+# Run from the line below to dev.off()
+#sizeGrWindow(9, 5)
+#pdf("WGCNA_host/WGCNA_figs/soft_threshold_signed.pdf",height=4, width=8)
+
+par(mfrow = c(1,2));
+cex1 = 0.9;
+
+# Scale-free topology fit index as a function of the soft-thresholding power
+plot(sft$fitIndices[,1], -sign(sft$fitIndices[,3])*sft$fitIndices[,2],
+     xlab="Soft Threshold (power)",ylab="Scale Free Topology Model Fit, signed R^2", type="n",
+     main = paste("Scale independence"));
+text(sft$fitIndices[,1], -sign(sft$fitIndices[,3])*sft$fitIndices[,2],
+     labels=powers,cex=cex1,col="red");
+
+# this line corresponds to using an R^2 cut-off of h
+abline(h = 0.90, col = "red")
+
+# Mean connectivity as a function of the soft-thresholding power
+plot(sft$fitIndices[,1], sft$fitIndices[,5],
+     xlab="Soft Threshold (power)",ylab="Mean Connectivity", type="n",
+     main = paste("Mean connectivity"))
+text(sft$fitIndices[,1], sft$fitIndices[,5], labels=powers, cex=cex1,col="red")
+#dev.off()
+
+```
+
+```{r create dendrogram, message=FALSE, warning=FALSE, comment = FALSE}
+
+## pick the power that corresponds with a SFT.R.sq value at or above 0.90 (9 as of 12 July 2022)
+
+# run from the line below to the save command
+s.th <- 9 # specify according to previous section
+adjacency <- adjacency(datt, power = s.th, type = "signed");
+TOM <- TOMsimilarity(adjacency, TOMType = "signed");
+dissTOM <- (1 - TOM)
+
+# Call the hierarchical clustering function
+geneTree <- flashClust(as.dist(dissTOM), method = "average")
+#par(mfrow = c(1,1))
+plot(geneTree, xlab = "", sub = "", main = "Gene Clustering on TOM-based dissimilarity", labels = FALSE, hang = 0.04)
+
+# We like large modules, so we set the minimum module size relatively high:
+minModuleSize <- 30;
+dynamicMods <- cutreeDynamic(dendro = geneTree, distM = dissTOM,
+                             deepSplit = 2, pamRespectsDendro = FALSE,
+                             minClusterSize = minModuleSize);
+dynamicColors <- labels2colors(dynamicMods)
+#table(dynamicColors)
+
+# Calculate eigengenes
+MEList <- moduleEigengenes(datt, colors = dynamicColors)
+MEs <- MEList$eigengenes
+# the grey module contains unassigned genes and is not considered a real module
+
+# if you have error messages trying to generate the eigengene correlations, run this below
+# check MEs, if grey shows NaN for all samples, then make sure to eliminate it using removeGreyME
+# MEs = removeGreyME(MEs, greyMEName = paste(moduleColor.getMEprefix(), "grey", sep=""))
+
+# Calculate dissimilarity of module eigengenes
+MEDiss <- 1 - cor(MEs);
+METree <- flashClust(as.dist(MEDiss), method = "average");
+
+
+## This saves the first pass data (hash it out when running with merges)
+save(dynamicMods, dynamicColors, MEs, METree, geneTree, file = "WGCNA/WGCNA_data/1stPassModules.RData")
+
+```
+
+```{r clustering tree, message=FALSE, warning=FALSE}
+
+## s2t the cutoff
+MEDissThres <- 0 # using 0.XX as of 12 July 2022 # in the first pass, set this to 0 - no merging (we want to see the module-traits heatmap first, then decide which modules are telling us the same story and better be merged)
+
+mm <- load('WGCNA/WGCNA_data/1stPassModules.RData')
+lnames <- load('WGCNA/WGCNA_data/wgcnaData_outlier.RData')
+# traits
+# head(datt)
+
+## saved version of module cluster tree
+pdf(file = "WGCNA/WGCNA_figures/ClusterTree.pdf", width = 8, height = 5)
+#sizeGrWindow(7, 6)
+plot(METree, xlab = "", sub = "")
+# Plot the cut line into the dendrogram
+abline(h=MEDissThres, col = "red")  # on 2nd pass: does this cut height meet your merging goals? If not, reset MEDissThres and replot
+dev.off()
+
+## plot for the markdown document
+plot(METree, xlab = "", sub = "")
+# Plot the cut line into the dendrogram
+abline(h=MEDissThres, col = "red")  # on 2nd pass: does this cut height meet your merging goals? If not, reset MEDissThres and replot
+
+
+# Call an automatic merging function
+merge <- mergeCloseModules(datt, dynamicColors, cutHeight = MEDissThres, verbose = 3)
+
+# The merged module colors
+mergedColors <- merge$colors;
+
+# Eigengenes of the new merged modules:
+mergedMEs <- merge$newMEs
+
+```
+
+```{r merged dendrogram, message=FALSE, warning=FALSE, comment=FALSE}
+
+# plotting the fabulous ridiculogram
+pdf(file = "WGCNA/WGCNA_figures/ClusterDendrogram.pdf", height = 4.5, width = 8.5)
+plotDendroAndColors(geneTree, cbind(dynamicColors, mergedColors),
+                    c("Dynamic Tree Cut", "Merged dynamic"),
+                    dendroLabels = FALSE, hang = 0.03,
+                    addGuide = FALSE, guideHang = 0.05,lwd=0.3)
+dev.off()
+
+# plot for markdown
+plotDendroAndColors(geneTree, cbind(dynamicColors, mergedColors),
+                    c("Dynamic Tree Cut", "Merged dynamic"),
+                    dendroLabels = FALSE, hang = 0.03,
+                    addGuide = FALSE, guideHang = 0.05,lwd=0.3)
+
+# Rename to moduleColors
+moduleColors = mergedColors
+# Construct numerical labels corresponding to the colors
+colorOrder = c("grey", standardColors(50));
+moduleLabels = match(moduleColors, colorOrder)-1;
+MEs = mergedMEs;
+
+# Calculate dissimilarity of module eigengenes
+#
+# the grey module contains unassigned genes and is not considered a real module
+# if you have error messages trying to generate the eigengene correlations, run this below
+# check MEs, if grey shows NaN for all samples, then make sure to eliminate it using removeGreyME
+# MEs = removeGreyME(MEs, greyMEName = paste(moduleColor.getMEprefix(), "grey", sep=""))
+MEDiss = 1-cor(MEs);
+# Cluster module eigengenes
+METree = flashClust(as.dist(MEDiss), method = "average");
+# Plot the result
+sizeGrWindow(7, 6)
+plot(METree, xlab = "Merged modules", sub = "")
+
+# how many genes in each module?
+#table(moduleColors)
+
+
+# Save module colors and labels for use in subsequent parts
+save(MEs, geneTree, moduleLabels, moduleColors, file = "WGCNA/WGCNA_data/networkdata_signed.RData")
+
+```
+
+
+### Heatmap and gene bar graph
+
+```{r heatmap of modules, message=FALSE, warning=FALSE, fig.height = 5.8, fig.width = 9}
+
+# plotting correlations with traits:
+load(file = "WGCNA/WGCNA_data/networkdata_signed.RData")
+load(file = "WGCNA/WGCNA_data/wgcnaData_outlier.RData");
+
+# Define numbers of genes and samples
+nGenes <- ncol(datt);
+nSamples <- nrow(datt);
+
+# Recalculate MEs with color labels
+MEs0 <- moduleEigengenes(datt, moduleColors)$eigengenes
+MEs <- orderMEs(MEs0)
+
+# correlations of genes with eigengenes
+moduleGeneCor <- cor(MEs, datt)
+moduleGenePvalue <- corPvalueStudent(moduleGeneCor, nSamples);
+moduleTraitCor <- cor(MEs, traits, use = "p");
+moduleTraitPvalue <- corPvalueStudent(moduleTraitCor, nSamples);
+
+# module-trait correlations
+textMatrix <- paste(signif(moduleTraitCor, 2), "\n(",
+                    signif(moduleTraitPvalue, 1), ")", sep = "");
+dim(textMatrix) <- dim(moduleTraitCor)
+par(mar = c(6, 8.5, 3, 3));
+
+#table(moduleColors) # gives numbers of genes in each module
+
+# shows only significant correlations
+modLabels <- sub("ME","",names(MEs))
+ps <- signif(moduleTraitPvalue,1)
+cors <- signif(moduleTraitCor,2)
+textMatrix <-  cors;
+textMatrix[ps>0.05]="-"
+dim(textMatrix) <- dim(moduleTraitCor)
+
+```
+
+```{r save WGCNA  output}
+
+# if it was first pass with no module merging, this is where you examine your heatmap
+# and dendrogram of module eigengenes to see
+# where you would like to set cut height (MEDissThres parameter) in the previous section
+# to merge modules that are telling the same story for your trait data
+# good way to do it is to find a group of similar modules in the heat map and then see
+# at which tree height they connect in the dendrogram.
+
+#####################
+## This saves everything that you need to create gene scatter plots, heat maps, and GO MWU files from all significant module/trait pairings
+save(datt, moduleTraitPvalue, moduleColors, MEs, traits, vsdWG, file = "WGCNA/WGCNA_data/wgcnaMods.RData")
+
+```
+
+```{r markdown heatmap figure}
+
+mod_df <- data.frame(module = row.names(moduleTraitCor), moduleTraitCor) %>% 
+  gather("trait", "corr", -module, factor_key = TRUE) %>% 
+  mutate(module = factor(module, levels = rownames(moduleTraitCor))) %>% 
+  mutate(module = fct_rev(module))
+
+mod_pval_df <- data.frame(module = row.names(ps), ps) %>% 
+  gather("trait", "pval", -module, factor_key = TRUE) %>% 
+  mutate(module = factor(module, levels = rownames(ps))) %>% 
+  mutate(module = fct_rev(module))
+  
+mod_df <- mod_df %>% 
+  add_column(lab = mod_pval_df$pval) %>% 
+  mutate(lab = ifelse(lab > 0.05, "-", round(corr,2)))
+
+
+#### Heatmap of modules from WGCNA
+heatmap <- ggplot(data = mod_df, aes(x = trait, y = module, fill = corr)) +
+  theme_bove() +
+  geom_tile() +
+  geom_text(aes(label = lab), color = "#2f2f2f", size = 3) +
+  scale_fill_gradient2(low = "#2166ac", mid = "#FFFFFF", high = "#b2182b") +
+  theme(legend.position = "right", legend.title = element_text(size = 12), plot.margin = margin(10, 10, 10, 150)) + 
+  theme(axis.ticks = element_blank(), axis.title = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, size = 12)) +
+  # theme(axis.ticks = element_blank(), axis.text.y = element_blank(), axis.title = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, size = 12)) +
+  scale_x_discrete(labels = colnames(moduleTraitCor)) +
+  guides(fill = guide_colourbar(barwidth = 0.7, barheight = 10, frame.colour = "black", ticks.colour = "black", title = expression(paste("Pearson", " R"^{2})))) +
+  coord_cartesian(expand = FALSE)
+
+
+#### barplot of genes within each module
+mct <- table(moduleColors)
+modLabels_plot <- as.data.frame(mct[rev(modLabels)])
+modLabels_plot2 <- as.character(modLabels_plot$moduleColors)
+#modLabels2 <- gsub("turquoise", "teal", modLabels_plot2)
+
+library(cowplot)
+
+barplot <- ggplot(data = modLabels_plot, aes(y = Freq, x = moduleColors, fill = moduleColors)) +
+  geom_col(colour = "black", size = 0.1) +
+  scale_fill_manual(values = modLabels_plot2) +
+  theme_cowplot() +
+  coord_flip(expand = FALSE) +
+  scale_y_reverse(limits=c(8000, 0), breaks = c(1000, 2000, 3000)) +
+  geom_text(aes(label = paste0(rev(modLabels), " (", Freq, ")")), hjust = 1.05, color="black", size = 5) +
+  theme(axis.ticks.y = element_blank(), axis.title.y = element_blank(), legend.position = "none", axis.line.y = element_blank(), axis.line.x = element_line(size = 0.2), axis.text.y = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, size = 8), axis.title.x = element_text(size = 10)) +
+  ylab("# genes\n per module")
+
+```
+
+```{r plot and save WGCNA with bars, fig.height = 5.8, fig.width = 10}
+
+heatmap #+ 
+ #annotation_custom(ggplotGrob(barplot), xmin = -6, xmax = 0.75, ymin = -6, ymax = 67) + 
+ #theme(plot.background = element_rect(fill = "white", colour = NA))
+
+#ggsave(file = "Figures/Main_figures/Figure4_WGCNA.pdf", height = 5.8, width = 10, units = "in", dpi = 1200)
+#ggsave(file = "Figures/Main_figures/Figure4_WGCNA.png", height = 5.8, width = 10, units = "in", dpi = 1200)
+
 ```
 
 <br/>
