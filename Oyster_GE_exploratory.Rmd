@@ -125,6 +125,8 @@ library(pdftools)
 library(ggrepel)
 library(adegenet)
 library(ggvenn)
+library(flashClust)
+library(WGCNA)
 
 source("Code/CustomFunctions.R")
 
@@ -1079,7 +1081,158 @@ pheatmap(heat_df, color = col, cluster_cols = TRUE, clustering_distance_rows = "
 
 ## Colleen adding in WGCNA
 
-*It will go here*
+```{r saving filtered count data for WGCNA, message=FALSE, warning=FALSE, include=FALSE}
+
+## for WCGNA: removing all genes with counts <5 in more than 90 % of samples
+counts4wgcna <- filter_counts_out[apply(filter_counts_out, 1, function(x) sum(x < 5)) < ncol(filter_counts_out) * 0.9,]
+nrow(counts4wgcna) # 12801 genes (originally had 24384 genes)
+
+# unhash if you want to save this data as a csv
+#write.csv(counts4wgcna, file = "WGCNA/WGCNA_data/wgcna_counts.csv")
+
+```
+
+```{r WGCNA data modification, eval=FALSE, include=FALSE}
+
+# takes the sample IDs, colony IDs, and factor levels from the design to create new column names for the dataframe
+snames <- paste(expDesign[,5], expDesign[,1], sep = "_")
+
+# renames the column names and save
+colnames(vsd) <- snames
+
+## more reduced stabilized dataset for WGCNA
+wg <- DESeqDataSetFromMatrix(countData = counts4wgcna,
+                             colData = expDesign,
+                             design = ~ treat)
+
+vsdWG <- assay(varianceStabilizingTransformation(wg))
+#head(vsdWG, 3)
+
+## Save the WGCNA data
+colnames(vsdWG) <- snames
+save(vsdWG, expDesign, file = "WGCNA/WGCNA_data/wgcna_data.RData")
+
+```
+
+```{r WGCNA packages and necessary lines, message=FALSE, warning=FALSE, include=FALSE}
+
+## installing WGCNA:
+# source("http://bioconductor.org/biocLite.R")
+# biocLite(c("AnnotationDbi", "impute", "GO.db", "preprocessCore"))
+# install.packages("flashClust")
+# install.packages("WGCNA",dependencies=TRUE)
+# repos="http://cran.us.r-project.org"
+# run these above commands once, then comment out
+# always run these before running any of the WGCNA script chunks:
+options(stringsAsFactors = FALSE)
+allowWGCNAThreads()
+
+```
+
+```{r WGCNA data loading, include=FALSE, message=FALSE, warning=FALSE}
+
+## importing data generated above 
+lnames <- load("WGCNA/WGCNA_data/wgcna_data.RData")
+lnames # "vsdWG"  "design" # log-transformed variance-stabilized gene expression, and table of experimental conditions
+datt <- t(vsdWG)
+#ncol(datt) # number of columns (12801)
+#nrow(datt) # number of rows (26)
+
+```
+
+```{r add phys traits to exp design, eval=FALSE, include=FALSE}
+
+## read in the phenotype data from Elise
+phys_all_df <- read.csv("Data/Oyster_AllPhysData.csv", header = TRUE)
+
+phys_subset_df <- phys_all_df %>% 
+  select(ID, TpCO2:Infect, BoredStart, BW0_L, BW0_W, CalcDay, EPFpHTotal:EPFCalSat, SW, WW, DW, CI_SW) %>% 
+  subset(ID %in% as.integer(as.character(expDesign$Sample_ID)))
+
+write.csv(phys_subset_df, "Data/Oyster_phys_WGCNA.csv", row.names = FALSE)
+
+```
+
+
+```{r create WGCNA trait matrix, include=FALSE, message=FALSE, warning=FALSE}
+
+## read in the phys data
+phys_traits <- read.csv("Data/Oyster_phys_WGCNA.csv", header = TRUE) %>% 
+  mutate(ID = factor(ID))
+
+expDesign <- expDesign %>% 
+  left_join(phys_traits[c(1, 5:8)], by = c("Sample_ID" = "ID"))
+
+
+## assembling matrix of QUANTITATIVE traits for WGCNA 
+# treatments
+`High pCO2` <- as.numeric(expDesign$pCO2 == "2800")
+`Infected` <- as.numeric(expDesign$infect == "S")
+`N_2800` <- as.numeric(expDesign$treat == "N_2800")
+`S_400` <- as.numeric(expDesign$treat == "S_400")
+`S_2800` <- as.numeric(expDesign$treat == "S_2800")
+`N_400` <- as.numeric(expDesign$treat == "N_400")
+
+
+
+# combine the quantitative with the qualitative for trait matrix
+traits <- cbind(`High pCO2`, `Infected`, `N_400`, `S_400`, `N_2800`, `S_2800`, expDesign[6:9])
+#colnames(traits) <- c("288_28", "311_31", "405_31", "447_28", "673_28", "701_31", "3285_28", "3300_31", "offshore", "density", "protein", "chlorophyll", "colour_intensity", "calcification", "carbohydrate", "lipid", "chlorophylla_cell", "percent_C")
+
+```
+
+```{r WGCNA outlier detection, message=FALSE, warning=FALSE}
+
+## outlier detection and removal
+# identifies outlier genes
+gsg <- goodSamplesGenes(datt, verbose = 3);
+gsg$allOK #if TRUE, no outlier genes
+
+# calculates mean expression per array, then the number of missing values per array
+meanExpressionByArray <- apply(datt, 1, mean, na.rm = TRUE)
+NumberMissingByArray <- apply(is.na(data.frame(datt)), 1, sum)
+
+# plots mean expression across all samples
+barplot(meanExpressionByArray,
+        xlab = "Sample", ylab = "Mean expression",
+        main ="Mean expression across samples",
+        names.arg = c(1:26), cex.names = 0.7)
+# look for any obvious deviations in expression across samples
+
+```
+
+```{r WGCNA outlier dendrogram, fig.height=13, fig.width=12}
+
+# sample dendrogram and trait heat map showing outliers
+A <- adjacency(t(datt), type = "signed")                 # SELECT SIGNED OR UNSIGNED HERE (use signed for WGCNA)
+
+# this calculates the whole network connectivity
+k <- (as.numeric(apply(A, 2, sum)) - 1)
+
+# standardized connectivity
+Z.k <- scale(k)
+thresholdZ.k <- -2.5 # often -2.5
+outlierColor <- ifelse(Z.k<thresholdZ.k,"red","black")
+sampleTree <- flashClust(as.dist(1 - A), method = "average")
+
+# Convert traits to a color representation where red indicates high values
+traitColors <- data.frame(numbers2colors(traits, signed=FALSE))
+dimnames(traitColors)[[2]] <- dimnames(traits)[[2]] #paste(names(traits))
+datColors <- data.frame(outlierC = outlierColor,traitColors)
+
+# Plot the sample dendrogram and the colors underneath.
+plotDendroAndColors(sampleTree,groupLabels = names(datColors), colors = datColors, main="Sample dendrogram and trait heatmap")
+
+# Remove outlying samples from expression and trait data
+remove_samples <- Z.k < thresholdZ.k | is.na(Z.k)
+datt <- datt[!remove_samples,]
+traits <- traits[!remove_samples,]
+# 1 outlier detected/removed as of 12 July 2022 (sample ID: 19611)
+
+
+## save updated WGCNA data/trait matrix with outliers removed
+save(datt, traits, file = "WGCNA/WGCNA_data/wgcnaData_outlier.RData")
+```
 
 <br/>
 <br/>
