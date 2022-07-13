@@ -218,7 +218,7 @@ ModWGCNA <- function(wgcna_data, traitMods, traits, geneModuleMembership, MEs, v
   
   # Forloop to calculate gene trait significance and gene significance p values for each significant module/trait pairing
   for (t in 1:nrow(traitMods)) { #
-    
+    #t = 1
     ## trait selection/specification
     Trait <- traitMods$whichTrait[t] # pulls trait name
     selTrait <- as.data.frame(traits[,Trait]) # selects the trait data that matches the trait name
@@ -337,7 +337,7 @@ ModWGCNA <- function(wgcna_data, traitMods, traits, geneModuleMembership, MEs, v
   
   # Forloop to cycle through trait/module pairings to produce GO ouput CSVs
   for (r in 1:nrow(traitMods)) {
-    
+    r = 1
     module <- traitMods$moduleCols[r] # pulls module colour
     selectTrait <- traitMods$whichTrait[r] # identified trait name
     

@@ -127,6 +127,7 @@ library(adegenet)
 library(ggvenn)
 library(flashClust)
 library(WGCNA)
+library(gridExtra)
 
 source("Code/CustomFunctions.R")
 
@@ -1349,7 +1350,7 @@ save(dynamicMods, dynamicColors, MEs, METree, geneTree, file = "WGCNA/WGCNA_data
 ```{r clustering tree, message=FALSE, warning=FALSE}
 
 ## s2t the cutoff
-MEDissThres <- 0.4 # using 0.XX as of 12 July 2022 # in the first pass, set this to 0 - no merging (we want to see the module-traits heatmap first, then decide which modules are telling us the same story and better be merged)
+MEDissThres <- 0.6 # using 0.XX as of 12 July 2022 # in the first pass, set this to 0 - no merging (we want to see the module-traits heatmap first, then decide which modules are telling us the same story and better be merged)
 
 mm <- load('WGCNA/WGCNA_data/1stPassModules.RData')
 lnames <- load('WGCNA/WGCNA_data/wgcnaData_outlier.RData')
@@ -1611,13 +1612,13 @@ saveRDS(object = ModWGCNA_out, file = "WGCNA/WGCNA_data/wgcna_TraitMod_plots.rds
 ################################################################
 
 # Edit these to match your data file names: 
-goAnnotations = "SSID_iso2go_cleaned.tab" # two-column, tab-delimited, one line per gene, multiple GO terms separated by semicolon. If you have multiple lines per gene, use nrify_GOtable.pl prior to running this script.
+goAnnotations = "CVIR_iso2go.tab" # two-column, tab-delimited, one line per gene, multiple GO terms separated by semicolon. If you have multiple lines per gene, use nrify_GOtable.pl prior to running this script.
 goDatabase = "WGCNA/WGCNA_GO/WGCNA_GO_scripts/go.obo" # download from http://www.geneontology.org/GO.downloads.ontology.shtml
 iso_path = "WGCNA/WGCNA_GO/WGCNA_GO_scripts/" # path to GO MWU scripts
 trait_path = "WGCNA/WGCNA_GO/WGCNA_GO_files/" # path to module files
 GO_path = "WGCNA/WGCNA_GO/WGCNA_GO_files/Significant_GO_files/" # path to save module files with significant GO terms
 figure_out_path = "WGCNA/WGCNA_GO/WGCNA_GO_figures/" # path where to save GO trees
-source("WGCNA/WGCNA_GO/WGCNA_GO_scripts/gomwuFunctions_CBBedits.R")
+source("GO_MWU/GO_scripts/gomwuFunctions_CBBedits.R")
 
 
 #####################################################################################
@@ -1640,8 +1641,8 @@ for(d in divisions) {
   goDivision <- d # set the division
   
   for(f in filename) {
-    
-    input <- f # the input file name
+    input <- "darkturquoise_binary.csv"
+    #input <- f # the input file name
     
     # Calculating stats
     gomwuStats(input, goDatabase, goAnnotations, goDivision, iso_path, trait_path,
