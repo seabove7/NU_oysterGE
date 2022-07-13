@@ -1545,6 +1545,229 @@ heatmap #+
 
 ```
 
+
+
+```{r wgcna mod/trait plots and files, eval=FALSE, include=FALSE}
+
+## Load all the required objects for running the module/trait function
+load(file = "WGCNA/WGCNA_data/wgcnaMods.RData")
+load(file = "WGCNA/WGCNA_data/networkdata_signed.Rdata")
+load(file = "WGCNA/WGCNA_data/wgcna_data.RData")
+
+
+## A couple things to do before running functions
+nGenes <- ncol(datt) # extract number of genes; (datt = transposed VSD transformed count data)
+nSamples <- nrow(datt) # extract number of samples; (datt = transposed VSD transformed count data)
+modNames <- substring(names(MEs), 3) # string of all module names 
+
+geneModuleMembership <- as.data.frame(signedKME(datt, MEs));
+MMPvalue <- as.data.frame(corPvalueStudent(as.matrix(geneModuleMembership), nSamples));
+names(geneModuleMembership) <- paste("MM", modNames, sep="");
+names(MMPvalue) <- paste("p.MM", modNames, sep="")
+
+
+## Select the significant trait/module pairings from the WGCNA heatmap 
+traitMods <- sigMods(matrix = moduleTraitPvalue) ## **NOTE: default alpha is set you 0.05 but can be adjusted by specifying 'alpha = XX' here
+
+
+# Running the below function will create the following: 
+## - Data frame of Gene Trait Significance ("GTSig") and Gene Significance P values ("GSPvalue") for each trait/module
+## - List containing all the ggplot objects for each module/trait correlation plot ("CorrPlots")
+## - List containing all the ggplot objects for each module/trait heatmap/bar plot ("Heatmaps")
+## - Saves pngs of all plots within both "CorrPlots" and "Heatmaps"
+## - Saves selected modules as csv files for GO and KOG analysis (both as kME values and binary (presence/absence) files)
+ModWGCNA_out <- ModWGCNA(wgcna_data = datt,
+                         traitMods = traitMods,
+                         traits = traits,
+                         geneModuleMembership = geneModuleMembership,
+                         MEs = MEs, 
+                         vsdWG = vsdWG,
+                         corrplotpath = "WGCNA/WGCNA_figures/ClusterPlots/", ## you need create this directory first!
+                         heatplotpath = "WGCNA/WGCNA_figures/HeatMaps/", ## you need create this directory first!
+                         goMWUpath = "WGCNA/WGCNA_GO/WGCNA_GO_files/") ## you need create this directory first!
+
+
+## Save the WGCNA Trait/module output list populated in function code chunk above
+saveRDS(object = ModWGCNA_out, file = "WGCNA/WGCNA_data/wgcna_TraitMod_plots.rds")
+
+```
+
+```{r GO enrichment, eval=FALSE, include=FALSE}
+
+# GO_MWU uses continuous measure of significance (such as fold-change or -log(p-value) ) to identify GO categories that are significantly enriches with either up- or down-regulated genes. The advantage - no need to impose arbitrary significance cutoff.
+
+# If the measure is binary (0 or 1) the script will perform a typical "GO enrichment" analysis based Fisher's exact test: it will show GO categories over-represented among the genes that have 1 as their measure. 
+
+# On the plot, different fonts are used to indicate significance and color indicates enrichment with either up (red) or down (blue) regulated genes. No colors are shown for binary measure analysis.
+
+# The tree on the plot is hierarchical clustering of GO categories based on shared genes. Categories with no branch length between them are subsets of each other.
+
+# The fraction next to GO category name indicates the fracton of "good" genes in it; "good" genes being the ones exceeding the arbitrary absValue cutoff (option in gomwuPlot). For Fisher's based test, specify absValue=0.5. This value does not affect statistics and is used for plotting only.
+
+
+# Mikhail V. Matz, UT Austin, February 2015; matz@utexas.edu 
+## UPDATED BY: Colleen B Bove, August 2021; colleenbove@gmail.com
+
+################################################################
+
+# Edit these to match your data file names: 
+goAnnotations = "SSID_iso2go_cleaned.tab" # two-column, tab-delimited, one line per gene, multiple GO terms separated by semicolon. If you have multiple lines per gene, use nrify_GOtable.pl prior to running this script.
+goDatabase = "WGCNA/WGCNA_GO/WGCNA_GO_scripts/go.obo" # download from http://www.geneontology.org/GO.downloads.ontology.shtml
+iso_path = "WGCNA/WGCNA_GO/WGCNA_GO_scripts/" # path to GO MWU scripts
+trait_path = "WGCNA/WGCNA_GO/WGCNA_GO_files/" # path to module files
+GO_path = "WGCNA/WGCNA_GO/WGCNA_GO_files/Significant_GO_files/" # path to save module files with significant GO terms
+figure_out_path = "WGCNA/WGCNA_GO/WGCNA_GO_figures/" # path where to save GO trees
+source("WGCNA/WGCNA_GO/WGCNA_GO_scripts/gomwuFunctions_CBBedits.R")
+
+
+#####################################################################################
+############################## GO enrichment analysis ###############################
+#####################################################################################
+
+## Pull all filenames for the binary (presence/absence) WGCNA files
+# two columns of comma-separated values: gene id, continuous measure of significance. To perform standard GO enrichment analysis based on Fisher's exact test, use binary measure (0 or 1, i.e., either sgnificant or not).
+filenames <- list.files(trait_path, pattern="*_binary.csv", full.names = FALSE)
+
+filename <- filenames %>% 
+  str_detect("CC_|MF_|BP_|MWU_", negate = TRUE) %>%  # this is important to not include the csv files from other runs
+  keep(filenames, .)
+
+#divisions <- c("CC", "MF", "BP")
+divisions <- c("CC") # a test run with just 1 div to see how it works
+
+for(d in divisions) {
+  
+  goDivision <- d # set the division
+  
+  for(f in filename) {
+    
+    input <- f # the input file name
+    
+    # Calculating stats
+    gomwuStats(input, goDatabase, goAnnotations, goDivision, iso_path, trait_path,
+               largest=0.1,  # a GO category will not be considered if it contains more than this fraction of the total number of genes
+               smallest=5,   # a GO category should contain at least this many genes to be considered
+               clusterCutHeight=0.30, # threshold for merging similar (gene-sharing) terms. See README for details.
+               #	Alternative="g" # by default the MWU test is two-tailed; specify "g" or "l" of you want to test for "greater" or "less" instead. 
+               Module=TRUE,Alternative="g" # un-remark this if you are analyzing a SIGNED WGCNA module (values: 0 for not in module genes, kME for in-module genes). In the call to gomwuPlot below, specify absValue=0.001 (count number of "good genes" that fall into the module)
+               #	Module=TRUE # un-remark this if you are analyzing an UNSIGNED WGCNA module 
+    )
+    
+  }
+}
+
+
+
+#####################################################################################
+### Identify modules with significant GO terms and save those terms to new folder ###
+#####################################################################################
+
+filenames <- list.files(trait_path, pattern="*_binary.csv", full.names = FALSE)
+
+# selects the correct files for significant GO terms
+filenames_sig <- filenames %>% 
+  str_detect("\\MWU_", negate = FALSE) %>%
+  keep(filenames, .)
+
+for(f in filenames_sig) {
+  mwu_file <- f
+  mwu_out <- read.table(paste(trait_path, mwu_file, sep = ""), sep = " ", header = TRUE)
+  
+  str_name <- unlist(str_split(mwu_file, "_")) # split up the file name string
+  goDivision <- str_name %>% str_detect("\\CC|\\MF|\\BP", negate = FALSE) %>% keep(str_name, .) # keep MWU files 
+  sig_GO <- mwu_out[mwu_out$p.adj < 0.1, ] # pull the significant GO terms per module file
+  GO_output <- paste(GO_path, str_name[2], "_", str_name[3], "_binary_sigGO.tsv", sep = "") # set the save path
+  
+  # saves files to path for significant GO terms
+  if (nrow(sig_GO) > 0){
+    sig_GO %>%  write_csv(file = GO_output)
+  }
+  
+}
+
+
+#####################################################################################
+############## Plot significant GO term trees from identified modules ###############
+#####################################################################################
+
+sig_files <- list.files(GO_path, pattern = "*.tsv", full.names = FALSE)
+
+#divisions <- c("CC")
+
+for(d in divisions) {
+  #d = "CC"
+  goDivision <- d # set the division
+  
+  sig_files_plot <- sig_files %>% 
+    str_detect(goDivision, negate = FALSE) %>%
+    keep(sig_files, .)
+
+  for (f in sig_files_plot){
+    #f = "BP_blue_binary_sigGO.tsv"
+    input <- f
+    str_name <- unlist(str_split(input, "_")) # split up the file name string
+    GO_fig_path <- paste(figure_out_path, str_name[1], "_", str_name[2], "_tree.png", sep = "")
+    
+    num_terms <- nrow(read.table(paste0(GO_path, input), sep = ",")) # count # of terms for tree height
+
+    if(num_terms >= 3) {
+      png(GO_fig_path, height = ifelse(num_terms > 3, (num_terms/7), 0.65), width = 5, units = "in", res = 1200)
+      gomwuPlot(input, goAnnotations, goDivision, iso_path, trait_path, GO_path,
+                absValue=0.001, # -log(0.05,10),  # genes with the measure value exceeding this will be counted as "good genes". This setting is for signed log-pvalues. Specify absValue=0.001 if you are doing Fisher's exact test for standard GO enrichment or analyzing a WGCNA module (all non-zero genes = "good genes").
+                #	absValue=1, # un-remark this if you are using log2-fold changes
+                level1=0.05, # FDR threshold for plotting. Specify level1=1 to plot all GO categories containing genes exceeding the absValue.
+                level2=0.01, # FDR cutoff to print in regular (not italic) font.
+                level3=0.001, # FDR cutoff to print in large bold font.
+                txtsize=1,    # decrease to fit more on one page, or increase (after rescaling the plot so the tree fits the text) for better "word cloud" effect
+                treeHeight=0.5 # height of the hierarchical clustering tree
+                #colors=c("dodgerblue2","firebrick1","skyblue2","lightcoral") # these are default colors, un-remar and change if needed
+      )
+      dev.off()
+    } else {
+      print(paste(gsub("_sigGO.tsv", "", input), "contains fewer than 3 GO terms, no tree produced"))
+    }
+      }
+}
+
+```
+
+
+<br/>
+<br/>
+
+### WGCNA correlation plots
+
+```{r load ModWGCNA_out}
+
+## Load the WGCNA Trait/module output list populated in function code chunk above
+ModWGCNA_out <- readRDS(file = "WGCNA/WGCNA_data/wgcna_TraitMod_plots.rds")
+
+```
+
+```{r plot all corr plots, fig.height=round((length(ModWGCNA_out[["CorrPlots"]]) / 1.6) + 5), fig.width = 12}
+
+## plot of all the correlation plots from WGCNA traits
+grid.arrange(grobs = ModWGCNA_out[["CorrPlots"]], ncol = 3)
+
+```
+
+**Figure SXX.** All identified WGCNA modules correlated against significant traits with *R^2^* and p values. 
+
+<br/>
+<br/>
+
+
+### WGCNA heatmaps
+
+```{r plot all heatmaps, fig.height=(length(ModWGCNA_out[["CorrPlots"]]) * 4), fig.width = 12}
+
+## plot of all the heatmap plots from WGCNA traits
+grid.arrange(grobs = ModWGCNA_out[["Heatmaps"]], ncol = 2)
+
+```
+
+**Figure SXX.** Heatmap and barplots of samples for all significant traits identified within each WGCNA module. 
+
 <br/>
 <br/>
 
