@@ -1611,8 +1611,19 @@ saveRDS(object = ModWGCNA_out, file = "WGCNA/WGCNA_data/wgcna_TraitMod_plots.rds
 
 ################################################################
 
+### ANGELA WRITE IT HERE:
+
+# files you want:  CVIR_iso2go.tab and CVIR_seq2iso.tab
+
+
+
+write.table(data.frame(x = 1), "WGCNA/WGCNA_GO/WGCNA_GO_scripts/CVIR_gene2go.tab", quote = FALSE)
+
+#####
+
+
 # Edit these to match your data file names: 
-goAnnotations = "CVIR_iso2go.tab" # two-column, tab-delimited, one line per gene, multiple GO terms separated by semicolon. If you have multiple lines per gene, use nrify_GOtable.pl prior to running this script.
+goAnnotations = "CVIR_gene2go.tab" # two-column, tab-delimited, one line per gene, multiple GO terms separated by semicolon. If you have multiple lines per gene, use nrify_GOtable.pl prior to running this script.
 goDatabase = "WGCNA/WGCNA_GO/WGCNA_GO_scripts/go.obo" # download from http://www.geneontology.org/GO.downloads.ontology.shtml
 iso_path = "WGCNA/WGCNA_GO/WGCNA_GO_scripts/" # path to GO MWU scripts
 trait_path = "WGCNA/WGCNA_GO/WGCNA_GO_files/" # path to module files
