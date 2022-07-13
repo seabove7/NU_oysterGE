@@ -132,7 +132,7 @@ source("Code/CustomFunctions.R")
 
 #color scheme throughout
 #n2800 n400 s2800 s400
-color_scheme <- c("#fdae61", "#abd9e9", "#d7191c", "#2c7bb6")
+color_scheme <- c("#2c7bb6", "#abd9e9", "#d7191c", "#fdae61")
 
 
 ```
@@ -306,12 +306,14 @@ GE_pca
 ```{r GE PCA plot, fig.align='center', fig.width = 8, fig.height = 6}
 
 ## PCA: treatment effects (crossed)
-pca_plot <- ggplot(pcaData, aes(x = PC1, y = PC2)) +
-  geom_point(size = 3, aes(colour = treat),alpha = 0.8) +
-  stat_ellipse(geom = "polygon", aes(colour = treat), fill = NA, type = "t", level = 0.95, show.legend = FALSE) +
+pca_plot <- ggplot(pcaData, aes(x = PC1, y = PC2, color = treat)) +
+  geom_point(size = 3, shape=21, aes(fill = treat),alpha = 0.8) +
+  stat_ellipse(geom = "polygon", aes(colour = treat, fill = treat), fill = NA, type = "t", level = 0.95, alpha = 0.2, show.legend = FALSE) +
   xlab(paste0("PC1 (", percentVar[1], "%)")) +
+  scale_fill_manual(values=color_scheme) +
+  scale_color_manual(values=color_scheme) +
   ylab(paste0("PC2 (", percentVar[2], "%)")) +
-  scale_colour_brewer(palette = 2, type = "qual") +
+  #scale_colour_brewer(palette = 2, type = "qual") +
   theme_classic()
 
 pca_plot
@@ -323,7 +325,7 @@ ggsave("Figures/FigureXX_GEpca.png", width = 6, height = 4)
 
 ```
 
-Figure 3: PCA plot with each point being one oyster sample colored by treatment. Orange represents the control treatment (no boring sponge, pCO2 level 400), green represents no sponge, pCO2 level 2800, purple represents samples infected with boring sponge at pCO2 2800, and pink represents samples infected with boring sponge at pCO2 400.
+Figure 3: PCA plot with each point being one oyster sample colored by treatment. Light blue represents the control treatment (no infection, pCO2 level 400), dark blue represents no infection but high pCO2, dark red represents samples infected with boring sponge at pCO2 2800, and orange represents samples infected with boring sponge at pCO2 400.
 
 <br/>
 <br/>
@@ -374,26 +376,35 @@ summary(res_shn_pco2)
 # sponge v no sponge at control pCO2
 downCon_S <- row.names(res_con_sponge[res_con_sponge$padj < 0.05 & !is.na(res_con_sponge$padj) & res_con_sponge$log2FoldChange < 0, ])
 upCon_S <- row.names(res_con_sponge[res_con_sponge$padj < 0.05 & !is.na(res_con_sponge$padj) & res_con_sponge$log2FoldChange > 0, ])
+allCon_S <- row.names(res_con_sponge[res_con_sponge$padj < 0.05 & !is.na(res_con_sponge$padj), ])
 
 # pCO2 with no sponge
 downTrt_N <- row.names(res_con_pco2[res_con_pco2$padj < 0.05 & !is.na(res_con_pco2$padj) & res_con_pco2$log2FoldChange < 0, ])
 upTrt_N <- row.names(res_con_pco2[res_con_pco2$padj < 0.05 & !is.na(res_con_pco2$padj) & res_con_pco2$log2FoldChange > 0, ])
+allTrt_N <- row.names(res_con_pco2[res_con_pco2$padj < 0.05 & !is.na(res_con_pco2$padj), ])
 
 # control v double trt (sponge at high pCo2)
 downTrt_S <- row.names(res_trt[res_trt$padj < 0.05 & !is.na(res_trt$padj) & res_trt$log2FoldChange < 0, ])
 upTrt_S <- row.names(res_trt[res_trt$padj < 0.05 & !is.na(res_trt$padj) & res_trt$log2FoldChange > 0, ])
+allTrt_S <- row.names(res_trt[res_trt$padj < 0.05 & !is.na(res_trt$padj), ]) 
 
 #sponge high vs sponge low
 downtrtS <- row.names(res_trt_pco2[res_trt_pco2$padj < 0.05 & !is.na(res_trt_pco2$padj) & res_trt$log2FoldChange < 0, ])
 uptrtS <- row.names(res_trt_pco2[res_trt_pco2$padj < 0.05 & !is.na(res_trt_pco2$padj) & res_trt$log2FoldChange > 0, ])
 
+alltrtS <- row.names(res_trt_pco2[res_trt_pco2$padj < 0.05 & !is.na(res_trt_pco2$padj), ] )
+
 #sponge low vs no sponge high
 downslsh <- row.names(res_stn_pco2[res_stn_pco2$padj < 0.05 & !is.na(res_stn_pco2$padj) & res_trt$log2FoldChange < 0, ])
 upslsh <- row.names(res_stn_pco2[res_stn_pco2$padj < 0.05 & !is.na(res_stn_pco2$padj) & res_trt$log2FoldChange > 0, ])
 
+allslsh <- row.names(res_stn_pco2[res_stn_pco2$padj < 0.05 & !is.na(res_stn_pco2$padj), ])
+
 #sponge high vs no sponge high
 downsshn <- row.names(res_shn_pco2[res_shn_pco2$padj < 0.05 & !is.na(res_shn_pco2$padj) & res_trt$log2FoldChange < 0, ])
 upsshn <- row.names(res_shn_pco2[res_shn_pco2$padj < 0.05 & !is.na(res_shn_pco2$padj) & res_trt$log2FoldChange > 0, ])
+
+allsshn <- row.names(res_shn_pco2[res_shn_pco2$padj < 0.05 & !is.na(res_shn_pco2$padj), ])
 
 ## Compile DEG dataframe
 DEG_bar <- data.frame("treat" = c(toString(unlist(str_split(res_con_sponge@elementMetadata@listData[["description"]][2], " "))[c(8,6)]), toString(unlist(str_split(res_con_pco2@elementMetadata@listData[["description"]][2], " "))[c(8,6)]), toString(unlist(str_split(res_trt@elementMetadata@listData[["description"]][2], " "))[c(8,6)]), toString(unlist(str_split(res_trt_pco2@elementMetadata@listData[["description"]][2], " "))[c(8,6)]), toString(unlist(str_split(res_stn_pco2@elementMetadata@listData[["description"]][2], " "))[c(8,6)]), toString(unlist(str_split(res_shn_pco2@elementMetadata@listData[["description"]][2], " "))[c(8,6)])), 
@@ -442,46 +453,56 @@ Figure: Bar plot of significant DEGs. The y axis denotes how many genes there ar
 venn_loci_df <- list("NS_400 vs S_2800" = upTrt_S, "S_2800 vs NS_2800" = upsshn)
 
 ## Comparing up NS_400 vs S_2800 and up S_2800 vs NS_2800
-venn_loci_up <- list("NS_400 vs S_2800" = upTrt_S, "S_2800 vs NS_2800" = uptrtS)
+venn_loci_up <- list("NS_400 vs S_2800" = upTrt_S, "S_2800 vs S_400" = uptrtS)
 
 ## Comparing down NS_400 vs S_2800 and up S_2800 vs NS_2800
 venn_loci_down <- list("NS_400 vs S_2800" = downTrt_S, "S_2800 vs NS_2800" = downsshn)
 
 ## Comparing down NS_400 vs S_2800 and down S_2800 vs S_400
-venn_loci2_down <- list("NS_400 vs S_2800" = downTrt_S, "S_2800 vs NS_2800" = downtrtS)
+venn_loci2_down <- list("NS_400 vs S_2800" = downTrt_S, "S_2800 vs S_400" = downtrtS)
+
+## Comparing between all three
+venn_all <- list("NS_400 vs S_2800" = allTrt_S, "S_2800 vs S_400" = alltrtS, "S_2800 vs NS_2800" = allsshn)
 
 ## Plot the seperate venn diagrams
 ven1 <- ggvenn(venn_loci_df, 
        show_percentage=FALSE,
        fill_color = c("darkorange", "coral"), fill_alpha = 0.3,
        stroke_size = 0.4, text_size = 3, text_color = "#25292B",
-       set_name_color = "#C8322F", set_name_size = 3,
+       set_name_color = "#C8322F", set_name_size = 2,
        )
 
 ven2 <- ggvenn(venn_loci_up, 
        show_percentage=FALSE,
        fill_color = c("darkorange", "coral"), fill_alpha = 0.3,
        stroke_size = 0.4, text_size = 3, text_color = "#25292B",
-       set_name_color = "#C8322F", set_name_size = 3,
+       set_name_color = "#C8322F", set_name_size = 2,
        )
 
 ven3 <- ggvenn(venn_loci_down, 
        show_percentage=FALSE,
        fill_color = c("cyan4", "cornflowerblue"), fill_alpha = 0.3,
        stroke_size = 0.4, text_size = 3, text_color = "#25292B",
-       set_name_color = "blue", set_name_size = 3,
+       set_name_color = "blue", set_name_size = 2,
        )
 
 ven4 <- ggvenn(venn_loci2_down, 
        show_percentage=FALSE,
        fill_color = c("cyan4", "cornflowerblue"), fill_alpha = 0.3,
        stroke_size = 0.4, text_size = 3, text_color = "#25292B",
-       set_name_color = "blue", set_name_size = 3,
+       set_name_color = "blue", set_name_size = 2,
+       )
+
+ven5 <- ggvenn(venn_all, 
+       show_percentage=FALSE,
+       fill_color = c("#fdae61", "#d7191c", "#2c7bb6"), fill_alpha = 0.3,
+       stroke_size = 0.4, text_size = 3, text_color = "#25292B",
+       set_name_color = "blue", set_name_size = 2,
        )
 
 
 ## Combine and save plot
-ggarrange(ven1, ven2, ven3, ven4)
+ggarrange(ven1, ven2, ven3, ven4, ven5)
 ggsave("Figures/FigureXX_PairedVens.pdf", width = 4, height = 4)
 ggsave("Figures/FigureXX_PairedVens.png", width = 4, height = 4)
 
@@ -1283,7 +1304,7 @@ text(sft$fitIndices[,1], sft$fitIndices[,5], labels=powers, cex=cex1,col="red")
 
 ```
 
-```{r create dendrogram, message=FALSE, warning=FALSE, comment = FALSE}
+```{r create dendrogram, message=FALSE, warning=FALSE, comment = FALSE, include = FALSE, eval = FALSE}
 
 ## pick the power that corresponds with a SFT.R.sq value at or above 0.90 (9 as of 12 July 2022)
 
@@ -1328,7 +1349,7 @@ save(dynamicMods, dynamicColors, MEs, METree, geneTree, file = "WGCNA/WGCNA_data
 ```{r clustering tree, message=FALSE, warning=FALSE}
 
 ## s2t the cutoff
-MEDissThres <- 0 # using 0.XX as of 12 July 2022 # in the first pass, set this to 0 - no merging (we want to see the module-traits heatmap first, then decide which modules are telling us the same story and better be merged)
+MEDissThres <- 0.4 # using 0.XX as of 12 July 2022 # in the first pass, set this to 0 - no merging (we want to see the module-traits heatmap first, then decide which modules are telling us the same story and better be merged)
 
 mm <- load('WGCNA/WGCNA_data/1stPassModules.RData')
 lnames <- load('WGCNA/WGCNA_data/wgcnaData_outlier.RData')
@@ -1405,6 +1426,7 @@ save(MEs, geneTree, moduleLabels, moduleColors, file = "WGCNA/WGCNA_data/network
 
 ```
 
+Figure: Cluster Dendrogram
 
 ### Heatmap and gene bar graph
 
