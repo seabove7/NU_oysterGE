@@ -1132,7 +1132,7 @@ colnames(vsd) <- snames
 ## more reduced stabilized dataset for WGCNA
 wg <- DESeqDataSetFromMatrix(countData = counts4wgcna,
                              colData = expDesign,
-                             design = ~ treat)
+                             design = ~ infect * pCO2)
 
 vsdWG <- assay(varianceStabilizingTransformation(wg))
 #head(vsdWG, 3)
@@ -1190,7 +1190,7 @@ phys_traits <- read.csv("Data/Oyster_phys_WGCNA.csv", header = TRUE) %>%
   mutate(ID = factor(ID))
 
 expDesign <- expDesign %>% 
-  left_join(phys_traits[c(1, 5:8)], by = c("Sample_ID" = "ID"))
+  left_join(phys_traits[c(1, 5:8, 16:17)], by = c("Sample_ID" = "ID"))
 
 
 ## assembling matrix of QUANTITATIVE traits for WGCNA 
@@ -1205,7 +1205,7 @@ expDesign <- expDesign %>%
 
 
 # combine the quantitative with the qualitative for trait matrix
-traits <- cbind(`High pCO2`, `Infected`, `N_400`, `S_400`, `N_2800`, `S_2800`, expDesign[6:9])
+traits <- cbind(`High pCO2`, `Infected`, `N_400`, `S_400`, `N_2800`, `S_2800`, expDesign[6:11])
 #colnames(traits) <- c("288_28", "311_31", "405_31", "447_28", "673_28", "701_31", "3285_28", "3300_31", "offshore", "density", "protein", "chlorophyll", "colour_intensity", "calcification", "carbohydrate", "lipid", "chlorophylla_cell", "percent_C")
 
 ```
@@ -1615,9 +1615,25 @@ saveRDS(object = ModWGCNA_out, file = "WGCNA/WGCNA_data/wgcna_TraitMod_plots.rds
 
 # files you want:  CVIR_iso2go.tab and CVIR_seq2iso.tab
 
+iss=read.table("WGCNA/WGCNA_GO/WGCNA_GO_scripts/CVIR_iso2go.tab",sep="\t",check.names=F)
+seq2iso=read.table("WGCNA/WGCNA_GO/WGCNA_GO_scripts/CVIR_seq2iso.tab",sep="\t",check.names=F)
 
+iss <- iss %>%
+  rename(V1 = "sequence", V2 = "GO_term")
 
-write.table(data.frame(x = 1), "WGCNA/WGCNA_GO/WGCNA_GO_scripts/CVIR_gene2go.tab", quote = FALSE)
+seq2iso <- seq2iso %>%
+  rename(V1 = "loci", V2 = "sequence")
+
+test <- cbind(iss, loci = seq2iso$loci)
+test <- test %>%
+  filter(!(GO_term == "")) %>%
+  select(-sequence)
+
+test <- test[, c("loci", "GO_term")]
+
+write.table(test, "WGCNA/WGCNA_GO/WGCNA_GO_scripts/CVIR_gene2go.tab", sep = "\t", col.names=FALSE, row.names = FALSE, quote = FALSE)
+
+#write.table(data.frame(x = 1), "WGCNA/WGCNA_GO/WGCNA_GO_scripts/CVIR_gene2go.tab", quote = FALSE)
 
 #####
 
@@ -1644,16 +1660,16 @@ filename <- filenames %>%
   str_detect("CC_|MF_|BP_|MWU_", negate = TRUE) %>%  # this is important to not include the csv files from other runs
   keep(filenames, .)
 
-#divisions <- c("CC", "MF", "BP")
-divisions <- c("CC") # a test run with just 1 div to see how it works
+divisions <- c("CC", "MF", "BP")
+#divisions <- c("CC") # a test run with just 1 div to see how it works
 
 for(d in divisions) {
   
   goDivision <- d # set the division
   
   for(f in filename) {
-    input <- "darkturquoise_binary.csv"
-    #input <- f # the input file name
+    #input <- "darkturquoise_binary.csv"
+    input <- f # the input file name
     
     # Calculating stats
     gomwuStats(input, goDatabase, goAnnotations, goDivision, iso_path, trait_path,
@@ -1779,6 +1795,20 @@ grid.arrange(grobs = ModWGCNA_out[["Heatmaps"]], ncol = 2)
 ```
 
 **Figure SXX.** Heatmap and barplots of samples for all significant traits identified within each WGCNA module. 
+
+
+```{r add all module trees to markdown from PNG, results='asis', fig.align = 'center', out.width = '80%'}
+
+files <- list.files(path = "WGCNA/WGCNA_GO/WGCNA_GO_figures", pattern = "png", full.names = TRUE)
+
+for (f in files) {
+  file_name <- tools::file_path_sans_ext(f) # file name without extension
+  file_name <- gsub("WGCNA/WGCNA_GO/WGCNA_GO_figures/", "", file_name) # remove extension for file name 
+  cat(paste0(file_name, ":"))
+  cat(paste0("![", file_name,"](", f, ")\n"))
+}
+
+```
 
 <br/>
 <br/>
