@@ -304,7 +304,7 @@ GE_pca
 <br/>
 
 
-```{r GE PCA plot, fig.align='center', fig.width = 8, fig.height = 6}
+```{r GE PCA plot, fig.align='center', fig.width = 4, fig.height = 3}
 
 ## PCA: treatment effects (crossed)
 pca_plot <- ggplot(pcaData, aes(x = PC1, y = PC2, color = treat)) +
@@ -320,7 +320,7 @@ pca_plot <- ggplot(pcaData, aes(x = PC1, y = PC2, color = treat)) +
 pca_plot
 
 ggsave("Figures/FigureXX_GEpca.pdf", width = 6, height = 4)
-ggsave("Figures/FigureXX_GEpca.png", width = 6, height = 4)
+ggsave("Figures/FigureXX_GEpca.png", width = 4, height = 3)
 
 
 
@@ -1190,6 +1190,7 @@ phys_traits <- read.csv("Data/Oyster_phys_WGCNA.csv", header = TRUE) %>%
   mutate(ID = factor(ID))
 
 expDesign <- expDesign %>% 
+  select(-treat) %>%
   left_join(phys_traits[c(1, 5:8, 16:17)], by = c("Sample_ID" = "ID"))
 
 
@@ -1197,15 +1198,17 @@ expDesign <- expDesign %>%
 # treatments
 `High pCO2` <- as.numeric(expDesign$pCO2 == "2800")
 `Infected` <- as.numeric(expDesign$infect == "S")
-`N_2800` <- as.numeric(expDesign$treat == "N_2800")
-`S_400` <- as.numeric(expDesign$treat == "S_400")
-`S_2800` <- as.numeric(expDesign$treat == "S_2800")
-`N_400` <- as.numeric(expDesign$treat == "N_400")
+#`N_2800` <- as.numeric(expDesign$treat == "N_2800")
+#`S_400` <- as.numeric(expDesign$treat == "S_400")
+#`S_2800` <- as.numeric(expDesign$treat == "S_2800")
+#`N_400` <- as.numeric(expDesign$treat == "N_400")
 
 
 
 # combine the quantitative with the qualitative for trait matrix
-traits <- cbind(`High pCO2`, `Infected`, `N_400`, `S_400`, `N_2800`, `S_2800`, expDesign[6:11])
+#traits <- cbind(`High pCO2`, `Infected`, `N_400`, `S_400`, `N_2800`, `S_2800`, expDesign[6:11])
+#without treat
+traits <- cbind(`High pCO2`, `Infected`, expDesign[5:10])
 #colnames(traits) <- c("288_28", "311_31", "405_31", "447_28", "673_28", "701_31", "3285_28", "3300_31", "offshore", "density", "protein", "chlorophyll", "colour_intensity", "calcification", "carbohydrate", "lipid", "chlorophylla_cell", "percent_C")
 
 ```
@@ -1350,7 +1353,7 @@ save(dynamicMods, dynamicColors, MEs, METree, geneTree, file = "WGCNA/WGCNA_data
 ```{r clustering tree, message=FALSE, warning=FALSE}
 
 ## s2t the cutoff
-MEDissThres <- 0.6 # using 0.XX as of 12 July 2022 # in the first pass, set this to 0 - no merging (we want to see the module-traits heatmap first, then decide which modules are telling us the same story and better be merged)
+MEDissThres <- 0.5 # using 0.XX as of 12 July 2022 # in the first pass, set this to 0 - no merging (we want to see the module-traits heatmap first, then decide which modules are telling us the same story and better be merged)
 
 mm <- load('WGCNA/WGCNA_data/1stPassModules.RData')
 lnames <- load('WGCNA/WGCNA_data/wgcnaData_outlier.RData')
