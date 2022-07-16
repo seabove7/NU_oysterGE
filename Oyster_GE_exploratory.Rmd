@@ -79,6 +79,7 @@ theme_bove <- function(base_size = 14) {
 # devtools::install_github("cran/gridSVG")
 # devtools::install_github('sinhrks/ggfortify')
 # devtools::install_github("ropensci/rnaturalearthhires")
+# devtools::install_github("lpantano/DEGreport")
 
 ## get Bioconductor packages
 if (!requireNamespace("BiocManager"))
@@ -1078,7 +1079,6 @@ ann_colors <- list(
 )
 
 
-
 res_trt$threshold <- as.logical(res_trt$padj < 0.1)
 
 # Sort the results tables
@@ -1093,14 +1093,17 @@ heat_df <- data.frame(norm_df_scaled[sigTrmt,]) %>%
   left_join(gene,  by = c("loci" = "V1")) %>% 
   distinct(loci, .keep_all = TRUE)
 
+colnames(heat_df) <- rownames(df)
+
 rownames(heat_df) <- heat_df$V2
 
 heat_df <- as.matrix(heat_df[-27:-28])
 
+library(DEGreport)
 
 # treatment DEGs
-col=color= colorRampPalette(rev(c('darkred', 'white', 'blue')),bias=0.8)(30)
-pheatmap(heat_df, color = col, cluster_cols = TRUE, clustering_distance_rows = "correlation", show_rownames = TRUE, annotation_col = df, annotation_colors = ann_colors)  
+col= colorRampPalette(rev(c('darkred', 'white', 'blue')),bias=0.8)(30)
+pheatmap(heat_df, color = col, cluster_cols = TRUE, clustering_distance_rows = "correlation", show_rownames = FALSE, annotation_col = df, annotation_colors = ann_colors)  
 
 ```
 
