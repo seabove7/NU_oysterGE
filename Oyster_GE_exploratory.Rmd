@@ -312,8 +312,8 @@ pca_plot <- ggplot(pcaData, aes(x = PC1, y = PC2, color = treat)) +
   geom_point(size = 3, shape=21, aes(fill = treat),alpha = 0.8) +
   stat_ellipse(geom = "polygon", aes(colour = treat, fill = treat), fill = NA, type = "t", level = 0.95, alpha = 0.2, show.legend = FALSE) +
   xlab(paste0("PC1 (", percentVar[1], "%)")) +
-  scale_fill_manual(values=color_scheme) +
-  scale_color_manual(values=color_scheme) +
+  scale_fill_manual(name = "Treatment", values=color_scheme, labels = c("No sponge, pCO2 2800", "No sponge, pCO2 400", "Sponge, pCO2 2800", "Sponge, pCO2 400")) +
+  scale_color_manual(name = "Treatment", values=color_scheme, labels = c("No sponge, pCO2 2800", "No sponge, pCO2 400", "Sponge, pCO2 2800", "Sponge, pCO2 400")) +
   ylab(paste0("PC2 (", percentVar[2], "%)")) +
   #scale_colour_brewer(palette = 2, type = "qual") +
   theme_classic()
@@ -464,7 +464,7 @@ venn_loci_down <- list("NS_400 vs S_2800" = downTrt_S, "S_2800 vs NS_2800" = dow
 venn_loci2_down <- list("NS_400 vs S_2800" = downTrt_S, "S_2800 vs S_400" = downtrtS)
 
 ## Comparing between all three
-venn_all <- list("NS_400 vs S_2800" = allTrt_S, "S_2800 vs S_400" = alltrtS, "S_2800 vs NS_2800" = allsshn)
+venn_all <- list("NS_400 vs S_2800" = allTrt_S, "N_2800 vs N_400" = allTrt_N, "S_400 vs N_400" = allCon_S)
 
 ## Plot the seperate venn diagrams
 ven1 <- ggvenn(venn_loci_df, 
@@ -497,7 +497,7 @@ ven4 <- ggvenn(venn_loci2_down,
 
 ven5 <- ggvenn(venn_all, 
        show_percentage=FALSE,
-       fill_color = c("#fdae61", "#d7191c", "#2c7bb6"), fill_alpha = 0.3,
+       fill_color = c("#2c7bb6", "#fdae61", "#d7191c"), fill_alpha = 0.3,
        stroke_size = 0.4, text_size = 3, text_color = "#25292B",
        set_name_color = "blue", set_name_size = 2,
        )
