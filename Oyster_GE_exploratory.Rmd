@@ -321,7 +321,7 @@ pca_plot <- ggplot(pcaData, aes(x = PC1, y = PC2, color = treat)) +
 pca_plot
 
 ggsave("Figures/FigureXX_GEpca.pdf", width = 6, height = 4)
-ggsave("Figures/FigureXX_GEpca.png", width = 4, height = 3)
+ggsave("Figures/FigureXX_GEpca.png", width = 5, height = 3)
 
 
 
@@ -430,14 +430,14 @@ split_stringfunc(res_trt)
 ggplot(data = DEG_bar, aes(x = treat, y = genes, fill = reg)) +
   theme_classic() +
   geom_bar(stat="identity") +
-  scale_fill_manual(values = c("cadetblue2", "coral")) +
+  scale_fill_manual(values = c("#2c7bb6", "#d7191c")) +
   geom_hline(yintercept = 0, linetype = "dashed", size=0.5) + 
   ylab("Sig DEGs") +
   theme(legend.position = "none", axis.text.x = element_text(angle = 90)) +
   xlab ("")
 
 ggsave("Figures/FigureXX_DEGsBar.pdf", width = 6, height = 4)
-ggsave("Figures/FigureXX_DEGsBar.png", width = 6, height = 4)
+ggsave("Figures/FigureXX_DEGsBar.png", width = 5, height = 4)
 
 ```
 
@@ -1058,28 +1058,50 @@ uniHeatmap=function(vsd,gene.names,metric,cutoff,metric2=NA,sort=NA,pdf=TRUE,pdf
 ```
 
 
-```{r fig.height = 6, fig.width =14}
+```{r fig.height = 9, fig.width =40}
 
 library(RColorBrewer)
 library(pheatmap)
 
 # let's take a look at some heatmaps
 # scale values
-means <- apply(assay(vsd),1,mean) # means of rows
-norm_df_scaled <- assay(vsd)-means # rescale expression data so it's up and down
-
+filtered_vsd <- assay(vsd)
+filtered_vsd <- filtered_vsd[ , c("19086", "19103", "19264", "19370", "19516", "19642", "19158", "19254", "19274", "19304", "19467", "19472", "19549")]
+means <- apply(filtered_vsd,1,mean) # means of rows
+norm_df_scaled <- filtered_vsd-means # rescale expression data so it's up and down
+head(filtered_vsd)
 df <- as.data.frame(colData(dds)[c("pCO2", "infect")])
 rownames(df) <- dds@colData@rownames
 
+df1 <- df %>%
+  mutate(infect = gsub("N", "None", infect)) %>%
+  mutate(infect = gsub("S", "Sponge", infect)) %>%
+  filter(row.names(df) %in% c("19086", "19103", "19264", "19370", "19516", "19642", "19158", "19254", "19274", "19304", "19467", "19472", "19549"))
+
+df1 <- df1 %>%
+  arrange(factor(row.names(df1), levels = c("19086", "19103", "19264", "19370", "19516", "19642", "19158", "19254", "19274", "19304", "19467", "19472", "19549")))
+
+#view(df1)
+
 #display.brewer.pal(n = 4, name = 'PRGn')
 #brewer.pal(n = 4, name = "PRGn")
+#ann_colors <- list(
+#  infect = c(N = "#A6DBA0", S = "#008837"),
+#  pCO2 = c(`400` = "#C2A5CF", `2800`= "#7B3294")
+#)
+
+#ann_colors <- list(
+#  infect = c(N = "#fdae61", S = "#d7191c"),
+#  pCO2 = c(`400` = "#abd9e9", `2800`= "#2c7bb6")
+#)
+
 ann_colors <- list(
-  infect = c(N = "#A6DBA0", S = "#008837"),
-  pCO2 = c(`400` = "#C2A5CF", `2800`= "#7B3294")
+  infect = c(None = "#abd9e9", Sponge = "#2c7bb6"),
+  pCO2 = c(`400` = "#fdae61", `2800`= "#d7191c")
 )
 
 
-res_trt$threshold <- as.logical(res_trt$padj < 0.1)
+res_trt$threshold <- as.logical(res_trt$padj< 0.1)
 
 # Sort the results tables
 res_sorted <- res_trt[order(res_trt$padj), ]
@@ -1091,19 +1113,25 @@ sigTrmt <- row.names(res_sorted)[which(res_sorted$threshold)]
 heat_df <- data.frame(norm_df_scaled[sigTrmt,]) %>% 
   mutate(loci = rownames(data.frame(norm_df_scaled[sigTrmt,]))) %>% 
   left_join(gene,  by = c("loci" = "V1")) %>% 
-  distinct(loci, .keep_all = TRUE)
-
-colnames(heat_df) <- rownames(df)
+  distinct(loci, .keep_all = TRUE) #%>%
+  #filter(!grepl('uncharacterized', V2))
 
 rownames(heat_df) <- heat_df$V2
 
-heat_df <- as.matrix(heat_df[-27:-28])
+colnames(heat_df) <- rownames(df1)
+
+
+heat_df <- as.matrix(heat_df[1:13])
 
 library(DEGreport)
 
 # treatment DEGs
-col= colorRampPalette(rev(c('darkred', 'white', 'blue')),bias=0.8)(30)
-pheatmap(heat_df, color = col, cluster_cols = TRUE, clustering_distance_rows = "correlation", show_rownames = FALSE, annotation_col = df, annotation_colors = ann_colors)  
+col= colorRampPalette(rev(c('#d01c8b', 'white', '#4dac26')),bias=0.8)(30)
+pheatmapfig <- pheatmap(heat_df, color = col, cluster_cols = TRUE, clustering_distance_rows = "correlation", show_colnames = FALSE, show_rownames = TRUE, annotation_col = df1, annotation_colors = ann_colors, fontsize = 30)  
+pheatmapfig
+#ggsave("Figures/Pheatmap.png", height = 7, width = 14)
+
+#pull from only N_400
 
 ```
 
