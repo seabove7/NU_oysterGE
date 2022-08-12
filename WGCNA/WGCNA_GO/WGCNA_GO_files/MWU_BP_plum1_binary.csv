@@ -1,0 +1,58 @@
+"delta.rank" "pval" "level" "nseqs" "term" "name" "p.adj"
+0 1 1 18 "GO:0000003" "reproduction" 1
+0 1 3 35 "GO:0000278" "mitotic cell cycle" 1
+0 1 3 12 "GO:0000902;GO:0009653" "cell morphogenesis" 1
+0 0.0290505607255924 1 61 "GO:0002376" "immune system process" 0.25
+0 1 2 169 "GO:0005975" "carbohydrate metabolic process" 1
+0 1 3 67 "GO:0006091" "generation of precursor metabolites and energy" 1
+0 0.657774342105659 4 473 "GO:0006259;GO:0044260;GO:0090304" "nucleic acid metabolic process" 1
+0 1 2 66 "GO:0006397;GO:0006396;GO:0016071" "mRNA processing" 1
+0 0.0247486426942026 2 56 "GO:0006399;GO:0034660" "tRNA metabolic process" 0.5
+0 1 3 144 "GO:0006412;GO:0019538;GO:0034645;GO:0043043;GO:0009059;GO:0044249;GO:1901576;GO:0006518;GO:0043604;GO:1901566;GO:0043603;GO:0044271" "protein metabolic process" 1
+0 1 2 22 "GO:0006457" "protein folding" 1
+0 0.35152706980415 3 273 "GO:0006520;GO:0019752;GO:0043436;GO:0006082" "cellular amino acid metabolic process" 0.922222222222222
+0 1 5 16 "GO:0006605;GO:0006886;GO:0015031;GO:0045184;GO:0071702;GO:0071705;GO:0008104;GO:0070727;GO:0033036" "intracellular protein transport" 1
+0 0.214669684562453 2 194 "GO:0006629" "lipid metabolic process" 0.785714285714286
+0 1 3 51 "GO:0006790" "sulfur compound metabolic process" 1
+0 1 3 21 "GO:0006913;GO:0051169" "nucleocytoplasmic transport" 1
+0 1 3 13 "GO:0006914;GO:0061919" "autophagy" 1
+0 1 2 199 "GO:0006950;GO:0050896" "response to stress" 1
+0 1 2 299 "GO:0006996" "organelle organization" 1
+0 1 3 47 "GO:0007005" "mitochondrion organization" 1
+0 1 2 9 "GO:0007009" "plasma membrane organization" 1
+0 1 3 149 "GO:0007010" "cytoskeleton organization" 1
+0 1 2 6 "GO:0007034" "vacuolar transport" 1
+0 1 2 104 "GO:0007049" "cell cycle" 1
+0 1 2 32 "GO:0007059" "chromosome segregation" 1
+0 1 2 157 "GO:0007155" "cell adhesion" 1
+0 1 2 98 "GO:0007267;GO:0007154;GO:0023052" "cell-cell signaling" 1
+0 0.130321828238373 2 142 "GO:0008219" "cell death" 0.483333333333333
+0 1 2 30 "GO:0008283" "cell population proliferation" 1
+0 1 2 254 "GO:0009056" "catabolic process" 1
+0 1 3 11 "GO:0009790;GO:0007275" "embryo development" 1
+0 0.100901865447244 5 122 "GO:0016070" "RNA metabolic process" 0.55
+0 1 3 165 "GO:0016192" "vesicle-mediated transport" 1
+0 1 2 186 "GO:0022607" "cellular component assembly" 1
+0 1 3 21 "GO:0022618;GO:0071826" "ribonucleoprotein complex subunit organization" 1
+0 1 2 28 "GO:0030154;GO:0048869" "cell differentiation" 1
+0 1 2 10 "GO:0030705" "cytoskeleton-dependent intracellular transport" 1
+0 0.123049314176902 1 29 "GO:0032501" "multicellular organismal process" 0.52
+0 0.356474934654425 1 96 "GO:0032502" "developmental process" 0.84
+0 1 4 45 "GO:0034655;GO:0019439;GO:0044270;GO:0046700;GO:1901361;GO:0044248;GO:1901575" "cellular catabolic process" 1
+0 1 1 26 "GO:0040007" "growth" 1
+0 1 3 113 "GO:0042254;GO:0022613;GO:0044085" "cellular component biogenesis" 1
+0 1 3 78 "GO:0042592;GO:0065008" "homeostatic process" 1
+0 1 3 51 "GO:0046907;GO:0051641;GO:0051649" "intracellular transport" 1
+0 1 2 12 "GO:0048646" "anatomical structure formation involved in morphogenesis" 1
+0 0.249691411372062 2 63 "GO:0048856" "anatomical structure development" 0.7875
+0 1 2 10 "GO:0048870" "cell motility" 1
+0 0.0780964549468355 2 18 "GO:0050877;GO:0003008" "nervous system process" 0.566666666666667
+0 1 -1 90 "GO:0051186" "obsolete cofactor metabolic process" 1
+0 1 2 105 "GO:0051276" "chromosome organization" 1
+0 1 2 36 "GO:0051301" "cell division" 1
+0 1 3 24 "GO:0051604" "protein maturation" 1
+0 0.499394248182453 3 149 "GO:0055085" "transmembrane transport" 0.963636363636364
+0 1 2 20 "GO:0061024" "membrane organization" 1
+0 1 3 126 "GO:0065003;GO:0043933" "protein-containing complex assembly" 1
+0 1 2 4 "GO:0071554" "cell wall organization or biogenesis" 1
+0 1 5 15 "GO:0140014;GO:0000280;GO:1903047;GO:0048285;GO:0022402" "mitotic nuclear division" 1

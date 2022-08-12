@@ -1,0 +1,24 @@
+"delta.rank" "pval" "level" "nseqs" "term" "name" "p.adj"
+0 1 3 41 "GO:0000228" "nuclear chromosome" 1
+0 1 2 116 "GO:0005576" "extracellular region" 1
+0 1 2 12 "GO:0005615" "extracellular space" 1
+0 1 -1 17 "GO:0005623" "obsolete cell" 1
+0 1 4 16 "GO:0005635;GO:0031967;GO:0031975" "nuclear envelope" 1
+0 1 2 73 "GO:0005654" "nucleoplasm" 1
+0 1 2 138 "GO:0005694" "chromosome" 1
+0 1 2 26 "GO:0005730" "nucleolus" 1
+0 0.118138739243737 2 213 "GO:0005737" "cytoplasm" 0.4
+0 1 2 111 "GO:0005739" "mitochondrion" 1
+0 1 2 20 "GO:0005768" "endosome" 1
+0 1 2 5 "GO:0005773" "vacuole" 1
+0 1 3 14 "GO:0005777;GO:0042579" "peroxisome" 1
+0 1 2 52 "GO:0005783" "endoplasmic reticulum" 1
+0 1 2 47 "GO:0005794" "Golgi apparatus" 1
+0 1 2 42 "GO:0005815" "microtubule organizing center" 1
+0 1 2 12 "GO:0005829" "cytosol" 1
+0 1 2 118 "GO:0005840" "ribosome" 1
+0 0.187625570296162 2 278 "GO:0005856" "cytoskeleton" 0.433333333333333
+0 1 3 184 "GO:0005886;GO:0016020" "plasma membrane" 1
+0 1 4 22 "GO:0005929;GO:0120025;GO:0042995" "cilium" 1
+0 0.0548208513634548 2 19 "GO:0030312;GO:0031012" "external encapsulating structure" 0.5
+0 1 2 55 "GO:0031410;GO:0097708;GO:0031982" "cytoplasmic vesicle" 1

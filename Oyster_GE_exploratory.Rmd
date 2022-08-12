@@ -307,6 +307,8 @@ GE_pca
 
 ```{r GE PCA plot, fig.align='center', fig.width = 4, fig.height = 3}
 
+color_scheme_ordered <- c("#abd9e9", "#2c7bb6", "#fdae61", "#d7191c") 
+
 ## PCA: treatment effects (crossed)
 pca_plot <- ggplot(pcaData, aes(x = PC1, y = PC2, color = treat)) +
   geom_point(size = 3, shape=21, aes(fill = treat),alpha = 0.8) +
@@ -464,7 +466,7 @@ venn_loci_down <- list("NS_400 vs S_2800" = downTrt_S, "S_2800 vs NS_2800" = dow
 venn_loci2_down <- list("NS_400 vs S_2800" = downTrt_S, "S_2800 vs S_400" = downtrtS)
 
 ## Comparing between all three
-venn_all <- list("NS_400 vs S_2800" = allTrt_S, "N_2800 vs N_400" = allTrt_N, "S_400 vs N_400" = allCon_S)
+venn_all <- list("Ctrl vs Sponge, pCO2 2800" = allTrt_S, "Ctrl vs No Sponge, pCO2 2800" = allTrt_N, "Ctrl vs Sponge, pCO2 400" = allCon_S)
 
 ## Plot the seperate venn diagrams
 ven1 <- ggvenn(venn_loci_df, 
@@ -498,10 +500,11 @@ ven4 <- ggvenn(venn_loci2_down,
 ven5 <- ggvenn(venn_all, 
        show_percentage=FALSE,
        fill_color = c("#2c7bb6", "#fdae61", "#d7191c"), fill_alpha = 0.3,
-       stroke_size = 0.4, text_size = 3, text_color = "#25292B",
-       set_name_color = "blue", set_name_size = 2,
+       stroke_size = 0.4, text_size = 7, text_color = "#25292B",
+       set_name_color = "blue", set_name_size = 3,
        )
 
+ven5
 
 ## Combine and save plot
 ggarrange(ven1, ven2, ven3, ven4, ven5)
@@ -560,7 +563,7 @@ Figure 5: left: four-way venn diagram showing relationships among up-regulated g
 
 ```{r}
 
-mycolors <- c("aquamarine3", "red", "darkorange")
+mycolors <- c("#0571b0", "#ca0020", "#f4a582")
 
 #### here is the code from the function without modifications:
 ## To run the function, enter the following objects:
@@ -687,7 +690,7 @@ TukeyHSD(res_aov_all, conf.level=.95)
 
 ### Plasticity Plots
 
-```{r}
+```{r, fig.width = 8, fig.height = 5}
 
 # calculate mean and standard error for ge_plast_1
 plasticity1_means_se <- ge_plast_all %>%  
@@ -718,13 +721,20 @@ mean_se_plot <- ggplot(plasticity_means_se, aes(x=treat, y=mean_N, colour = trea
   geom_point(data = ge_plast_2, aes(x = treat, y = dist, color = treat), alpha = 0.3)
 
 mean_se_plot_all <- ggplot(plasticity1_means_se, aes(x=treat, y=mean_N, colour = treat)) + 
-  geom_point(color = mycolors) +
+  geom_point(size = 4, color = mycolors) +
   geom_errorbar(aes(ymin=mean_N-se, ymax=mean_N+se), width=0.2, size=0.5, color = mycolors) +
-  scale_colour_manual(values = mycolors) +
+  scale_colour_manual(values = mycolors, labels = c("No sponge, pCO2 2800","Sponge, pCO2 2800", "Sponge, pCO2 400"), name = "Treatment") +
   ylab("Mean of Dist") +
-  ggtitle("D)") +
-  theme(legend.position = "none") +
-  geom_point(data = ge_plast_all, aes(x = treat, y = dist, color = treat), alpha = 0.3)
+  theme_bw() +
+  scale_x_discrete(labels= c("", "", "")) +
+  xlab("Treatment") +
+  ylab("Plasticity") +
+  #ggtitle("D)") +
+  theme(text = element_text(size = 20)) +
+  geom_point(size = 3, data = ge_plast_all, aes(x = treat, y = dist, color = treat), alpha = 0.7, position = "jitter") +
+  theme(axis.text.x = element_text(angle = 25, vjust = 0.6, size=15))
+
+mean_se_plot_all
 
 ggarrange(pca2_plot, pca_all_plot, mean_se_plot, mean_se_plot_all, common.legend = TRUE)
 
@@ -797,7 +807,7 @@ source("GO_MWU/GO_scripts/gomwuFunctions_CBBedits.R")
 
 
 ## to set custom colours
-cols <- c("dodgerblue2","firebrick1","skyblue2","lightcoral")
+cols <- c("#0571b0","#ca0020","#92c5de","#f4a582")
 
 
 
@@ -1058,7 +1068,7 @@ uniHeatmap=function(vsd,gene.names,metric,cutoff,metric2=NA,sort=NA,pdf=TRUE,pdf
 ```
 
 
-```{r fig.height = 9, fig.width =40}
+```{r fig.height = 14, fig.width = 40}
 
 library(RColorBrewer)
 library(pheatmap)
@@ -1126,8 +1136,8 @@ heat_df <- as.matrix(heat_df[1:13])
 library(DEGreport)
 
 # treatment DEGs
-col= colorRampPalette(rev(c('#d01c8b', 'white', '#4dac26')),bias=0.8)(30)
-pheatmapfig <- pheatmap(heat_df, color = col, cluster_cols = TRUE, clustering_distance_rows = "correlation", show_colnames = FALSE, show_rownames = TRUE, annotation_col = df1, annotation_colors = ann_colors, fontsize = 30)  
+col= colorRampPalette(rev(c('#e66101', "#fdb863", "#fdcb8e", "#fce1c0" ,"white", '#5e3c99')),bias=0.8)(30)
+pheatmapfig <- pheatmap(heat_df, color = col, cluster_cols = TRUE, clustering_distance_rows = "correlation", show_colnames = TRUE, show_rownames = TRUE, annotation_col = df1, annotation_colors = ann_colors, fontsize = 30)  
 pheatmapfig
 #ggsave("Figures/Pheatmap.png", height = 7, width = 14)
 
@@ -1563,8 +1573,8 @@ barplot <- ggplot(data = modLabels_plot, aes(y = Freq, x = moduleColors, fill = 
   theme_cowplot() +
   coord_flip(expand = FALSE) +
   scale_y_reverse(limits=c(8000, 0), breaks = c(1000, 2000, 3000)) +
-  geom_text(aes(label = paste0(rev(modLabels), " (", Freq, ")")), hjust = 1.05, color="black", size = 5) +
-  theme(axis.ticks.y = element_blank(), axis.title.y = element_blank(), legend.position = "none", axis.line.y = element_blank(), axis.line.x = element_line(size = 0.2), axis.text.y = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, size = 8), axis.title.x = element_text(size = 10)) +
+  geom_text(aes(label = paste0(rev(modLabels), " (", Freq, ")")), hjust = 1.05, color="black", size = 10) +
+  theme(axis.ticks.y = element_blank(), axis.title.y = element_blank(), legend.position = "none", axis.line.y = element_blank(), axis.line.x = element_line(size = 0.2), axis.text.y = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, size = 10), axis.title.x = element_text(size = 10)) +
   ylab("# genes\n per module")
 
 ```
@@ -1665,7 +1675,23 @@ test <- test %>%
 
 test <- test[, c("loci", "GO_term")]
 
-write.table(test, "WGCNA/WGCNA_GO/WGCNA_GO_scripts/CVIR_gene2go.tab", sep = "\t", col.names=FALSE, row.names = FALSE, quote = FALSE)
+haplotigs <- read.table("Haplotig_gene_mRNA_CDS_identifiers.tab",sep="\t",check.names=F)
+haplotigs <- haplotigs %>%
+  rename(Attr.Parent.. = "loci") %>%
+  filter(grepl('LOC', loci))
+
+remove_haplotigs <- merge(haplotigs, seq2iso, by = "loci", all = T)
+
+remove_haplotigs <- remove_haplotigs %>%
+  filter(Haplotig_Flag == "Not_Haplotig")
+
+haplotigs_removed <- merge(test, haplotigs, by = "loci")
+haplotigs_removed <- haplotigs_removed %>%
+  select(c(loci, GO_term))
+
+haplotigs_removed <- unique(haplotigs_removed)
+
+write.table(haplotigs_removed, "WGCNA/WGCNA_GO/WGCNA_GO_scripts/CVIR_gene2go.tab", sep = "\t", col.names=FALSE, row.names = FALSE, quote = FALSE)
 
 #write.table(data.frame(x = 1), "WGCNA/WGCNA_GO/WGCNA_GO_scripts/CVIR_gene2go.tab", quote = FALSE)
 
