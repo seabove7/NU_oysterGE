@@ -145,7 +145,7 @@ color_scheme <- c("#2c7bb6", "#abd9e9", "#d7191c", "#fdae61")
 ```{r read in data}
 
 # read in the counts file
-counts <- read.table("Data/CVIR_featurecounts_22Jun22.txt", header = TRUE, row.names = 1)
+counts <- read.table("Data/CVIR_featurecounts_23Sep22.txt", header = TRUE, row.names = 1)
 counts <- counts[c(-1:-5, -37)] # removing columns 1-5 since we do not need them for this (and the Undetermined column)
 col_names <- colnames(counts)
 
@@ -1173,7 +1173,7 @@ colnames(vsd) <- snames
 ## more reduced stabilized dataset for WGCNA
 wg <- DESeqDataSetFromMatrix(countData = counts4wgcna,
                              colData = expDesign,
-                             design = ~ infect * pCO2)
+                             design = ~ infect + pCO2)
 
 vsdWG <- assay(varianceStabilizingTransformation(wg))
 #head(vsdWG, 3)
@@ -1394,7 +1394,7 @@ save(dynamicMods, dynamicColors, MEs, METree, geneTree, file = "WGCNA/WGCNA_data
 ```{r clustering tree, message=FALSE, warning=FALSE}
 
 ## s2t the cutoff
-MEDissThres <- 0.5 # using 0.XX as of 12 July 2022 # in the first pass, set this to 0 - no merging (we want to see the module-traits heatmap first, then decide which modules are telling us the same story and better be merged)
+MEDissThres <- 0.4 # using 0.XX as of 12 July 2022 # in the first pass, set this to 0 - no merging (we want to see the module-traits heatmap first, then decide which modules are telling us the same story and better be merged)
 
 mm <- load('WGCNA/WGCNA_data/1stPassModules.RData')
 lnames <- load('WGCNA/WGCNA_data/wgcnaData_outlier.RData')

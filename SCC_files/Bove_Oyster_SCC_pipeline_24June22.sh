@@ -251,6 +251,15 @@ STAR --runThreadN 32 \
 # !!!!! WARNING: --genomeSAindexNbases 14 is too large for the genome size=684741128, which may cause seg-fault at the mapping step. Re-run genome generation with recommended --genomeSAindexNbases 13
 # ... so reran the script and saved it to: STAR_ref 
 
+## Originally mapped to the NCBI genome (GCF_002022765.2_C_virginica-3.0_genomic.fna), however, this version of the genome contained a lot of haplotigs.
+# Because of this, using a new masked genome from the Puritz lab.
+# GitHub repo: https://github.com/The-Eastern-Oyster-Genome-Project/2022_Eastern_Oyster_Haplotig_Masked_Genome/tree/main/Haplotig_Masking/Output/Masked_Genome
+# biorxiv manuscript:  https://www.biorxiv.org/content/10.1101/2022.08.29.505626v1
+
+# move the masked genome to the SCC
+scp -r CVIR_reference_masked.fasta bovec@scc1.bu.edu:/projectnb/davieslab/bove/oysters/genome_files
+
+
 
 # load the STAR module
 module load star/2.7.9a
@@ -264,35 +273,35 @@ source STAR_genomeCreate.sh
 # /projectnb/davieslab/bove/oysters/genome_files/
 # 
 # Please put in the output folder name:
-# STAR_ref
+# STAR_ref_mask
 # 
 # Outputs saving to :  /projectnb/davieslab/bove/oysters/genome_files/gffread-0.12.7/STAR_ref
 # Directory Created
 # 
 # Select genome file (.fna format, should include entire path)
-# /projectnb/davieslab/bove/oysters/genome_files/GCF_002022765.2_C_virginica-3.0_genomic.fna
+# /projectnb/davieslab/bove/oysters/genome_files/CVIR_reference_masked.fasta
 # 
 # Select gene annotation file (.gtf, should includ entire path)
 # /projectnb/davieslab/bove/oysters/genome_files/GCF_002022765.2_C_virginica-3.0_genomic.gtf
 
 
 ## Output from the successful run:
-# 	STAR --runThreadN 32 --runMode genomeGenerate --genomeDir /projectnb/davieslab/bove/oysters/genome_files/gffread-0.12.7/STAR_ref --genomeFastaFiles /projectnb/davieslab/bove/oysters/genome_files/GCF_002022765.2_C_virginica-3.0_genomic.fna --sjdbGTFfile /projectnb/davieslab/bove/oysters/genome_files/gffread-0.12.7/Cvir_genome.gtf --genomeSAindexNbases 13
+# 	STAR --runThreadN 32 --runMode genomeGenerate --genomeDir /projectnb/davieslab/bove/oysters/genome_files/STAR_ref_mask --genomeFastaFiles /projectnb/davieslab/bove/oysters/genome_files/CVIR_reference_masked.fasta --sjdbGTFfile /projectnb/davieslab/bove/oysters/genome_files/GCF_002022765.2_C_virginica-3.0_genomic.gtf --genomeSAindexNbases 13
 # 	STAR version: 2.7.9a   compiled: 2021-07-19T14:08:30-0400 scc-bc1:/share/pkg.7/star/2.7.9a/src/STAR-2.7.9a/source
-# Jun 15 14:48:16 ..... started STAR run
-# Jun 15 14:48:16 ... starting to generate Genome files
-# Jun 15 14:48:26 ..... processing annotations GTF
-# Jun 15 14:48:36 ... starting to sort Suffix Array. This may take a long time...
-# Jun 15 14:48:39 ... sorting Suffix Array chunks and saving them to disk...
-# Jun 15 14:50:21 ... loading chunks from disk, packing SA...
-# Jun 15 14:50:40 ... finished generating suffix array
-# Jun 15 14:50:40 ... generating Suffix Array index
-# Jun 15 14:51:49 ... completed Suffix Array index
-# Jun 15 14:51:50 ..... inserting junctions into the genome indices
-# Jun 15 14:53:26 ... writing Genome to disk ...
-# Jun 15 14:53:27 ... writing Suffix Array to disk ...
-# Jun 15 14:53:37 ... writing SAindex to disk
-# Jun 15 14:53:38 ..... finished successfully
+# Sep 23 09:17:01 ..... started STAR run
+# Sep 23 09:17:01 ... starting to generate Genome files
+# Sep 23 09:17:07 ..... processing annotations GTF
+# Sep 23 09:17:18 ... starting to sort Suffix Array. This may take a long time...
+# Sep 23 09:17:20 ... sorting Suffix Array chunks and saving them to disk...
+# Sep 23 09:18:40 ... loading chunks from disk, packing SA...
+# Sep 23 09:18:54 ... finished generating suffix array
+# Sep 23 09:18:54 ... generating Suffix Array index
+# Sep 23 09:19:49 ... completed Suffix Array index
+# Sep 23 09:19:50 ..... inserting junctions into the genome indices
+# Sep 23 09:21:03 ... writing Genome to disk ...
+# Sep 23 09:21:04 ... writing Suffix Array to disk ...
+# Sep 23 09:21:12 ... writing SAindex to disk
+# Sep 23 09:21:13 ..... finished successfully
 
 
 
@@ -311,13 +320,12 @@ nano STAR_mapping.sh
 #----
 #!/bin/bash -l
 
-STAR --genomeDir /projectnb/davieslab/bove/oysters/genome_files/STAR_ref \
+STAR --genomeDir /projectnb/davieslab/bove/oysters/genome_files/STAR_ref_mask \
       --readFilesIn 19013_S27.fastq \
       --outSAMtype BAM SortedByCoordinate \
       --quantMode GeneCounts \
       --outSAMunmapped Within \
-      --outSAMattributes NH HI NM MD AS \
-      --outFileNamePrefix ../star_mapped3/19013_S27
+      --outFileNamePrefix ../mapped_files/19013_S27      
 #----
 
 
@@ -332,7 +340,7 @@ nano STAR_mapping.sh
 
 for fastq in /projectnb/davieslab/bove/oysters/trim_files/*trim
 do echo $fastq
-$RUN STAR --genomeDir /projectnb/davieslab/bove/oysters/genome_files/STAR_ref \
+$RUN STAR --genomeDir /projectnb/davieslab/bove/oysters/genome_files/STAR_ref_mask \
       --readFilesIn $fastq \
       --outSAMtype BAM SortedByCoordinate \
       --quantMode GeneCounts \
@@ -351,46 +359,46 @@ qstat -u bovec
 
 
 # use this to view mapped read % for each sample
-grep "Uniquely mapped reads %" *.Log.final.out
+grep "Uniquely mapped reads %" *Log.final.out
 
-# 19013_S27.Log.final.out:                        Uniquely mapped reads % |     67.81%
-# 19041_S8.Log.final.out:                        Uniquely mapped reads % |      66.46%
-# 19076_S18.Log.final.out:                        Uniquely mapped reads % |     66.77%
-# 19086_S16.Log.final.out:                        Uniquely mapped reads % |     65.13%
-# 19092_S11.Log.final.out:                        Uniquely mapped reads % |     66.08%
-# 19103_S5.Log.final.out:                        Uniquely mapped reads % |      65.22%
-# 19158_S29.Log.final.out:                        Uniquely mapped reads % |     66.87%
-# 19197_S21.Log.final.out:                        Uniquely mapped reads % |     68.26%
-# 19227_S4.Log.final.out:                        Uniquely mapped reads % |      65.72%
-# 19254_S12.Log.final.out:                        Uniquely mapped reads % |     67.12%
-# 19264_S19.Log.final.out:                        Uniquely mapped reads % |     65.39%
-# 19274_S7.Log.final.out:                        Uniquely mapped reads % |      65.71%
-# 19304_S31.Log.final.out:                        Uniquely mapped reads % |     66.66%
-# 19355_S1.Log.final.out:                        Uniquely mapped reads % |      61.62%
-# 19370_S30.Log.final.out:                        Uniquely mapped reads % |     65.34%
-# 19372_S17.Log.final.out:                        Uniquely mapped reads % |     66.55%
-# 19378_S23.Log.final.out:                        Uniquely mapped reads % |     66.77%
-# 19382_S24.Log.final.out:                        Uniquely mapped reads % |     60.93%
-# 19388_S20.Log.final.out:                        Uniquely mapped reads % |     66.41%
-# 19441_S15.Log.final.out:                        Uniquely mapped reads % |     66.87%
-# 19467_S14.Log.final.out:                        Uniquely mapped reads % |     66.28%
-# 19472_S26.Log.final.out:                        Uniquely mapped reads % |     62.29%
-# 19496_S9.Log.final.out:                        Uniquely mapped reads % |      65.55%
-# 19505_S25.Log.final.out:                        Uniquely mapped reads % |     63.57%
-# 19516_S13.Log.final.out:                        Uniquely mapped reads % |     67.54%
-# 19536_S3.Log.final.out:                        Uniquely mapped reads % |      65.90%
-# 19549_S28.Log.final.out:                        Uniquely mapped reads % |     62.66%
-# 19611_S2.Log.final.out:                        Uniquely mapped reads % |      62.85%
-# 19637_S6.Log.final.out:                        Uniquely mapped reads % |      67.80%
-# 19642_S10.Log.final.out:                        Uniquely mapped reads % |     66.79%
-# 19650_S22.Log.final.out:                        Uniquely mapped reads % |     66.84%
-# Undetermined_S0.Log.final.out:                        Uniquely mapped reads % |     67.47%
+# 19013_S27.Log.final.out:                        Uniquely mapped reads % |	78.81%
+# 19041_S8.Log.final.out:                        Uniquely mapped reads % |	77.41%
+# 19076_S18.Log.final.out:                        Uniquely mapped reads % |	77.26%
+# 19086_S16.Log.final.out:                        Uniquely mapped reads % |	75.73%
+# 19092_S11.Log.final.out:                        Uniquely mapped reads % |	76.86%
+# 19103_S5.Log.final.out:                        Uniquely mapped reads % |	75.60%
+# 19158_S29.Log.final.out:                        Uniquely mapped reads % |	77.29%
+# 19197_S21.Log.final.out:                        Uniquely mapped reads % |	79.24%
+# 19227_S4.Log.final.out:                        Uniquely mapped reads % |	76.85%
+# 19254_S12.Log.final.out:                        Uniquely mapped reads % |	78.05%
+# 19264_S19.Log.final.out:                        Uniquely mapped reads % |	75.52%
+# 19274_S7.Log.final.out:                        Uniquely mapped reads % |	76.09%
+# 19304_S31.Log.final.out:                        Uniquely mapped reads % |	77.34%
+# 19355_S1.Log.final.out:                        Uniquely mapped reads % |	71.65%
+# 19370_S30.Log.final.out:                        Uniquely mapped reads % |	75.80%
+# 19372_S17.Log.final.out:                        Uniquely mapped reads % |	77.47%
+# 19378_S23.Log.final.out:                        Uniquely mapped reads % |	77.62%
+# 19382_S24.Log.final.out:                        Uniquely mapped reads % |	70.80%
+# 19388_S20.Log.final.out:                        Uniquely mapped reads % |	76.98%
+# 19441_S15.Log.final.out:                        Uniquely mapped reads % |	77.83%
+# 19467_S14.Log.final.out:                        Uniquely mapped reads % |	76.87%
+# 19472_S26.Log.final.out:                        Uniquely mapped reads % |	72.84%
+# 19496_S9.Log.final.out:                        Uniquely mapped reads % |	76.64%
+# 19505_S25.Log.final.out:                        Uniquely mapped reads % |	73.71%
+# 19516_S13.Log.final.out:                        Uniquely mapped reads % |	78.52%
+# 19536_S3.Log.final.out:                        Uniquely mapped reads % |	76.47%
+# 19549_S28.Log.final.out:                        Uniquely mapped reads % |	72.82%
+# 19611_S2.Log.final.out:                        Uniquely mapped reads % |	73.21%
+# 19637_S6.Log.final.out:                        Uniquely mapped reads % |	79.09%
+# 19642_S10.Log.final.out:                        Uniquely mapped reads % |	77.56%
+# 19650_S22.Log.final.out:                        Uniquely mapped reads % |	77.42%
+# Undetermined_S0.Log.final.out:                        Uniquely mapped reads % |	78.15%
 
 
 
 ## Going to check that a bam file looks good using samtools:
 module load samtools
-samtools view -h 19013_S27Aligned.sortedByCoord.out.bam | less
+samtools view -h 19650_S22.Aligned.sortedByCoord.out.bam | less
 
 # this looks good so moving forward!
 
@@ -434,33 +442,32 @@ mkdir count_files
 
 featureCounts -T 6 -s 1 \
   -a /projectnb/davieslab/bove/oysters/genome_files/GCF_002022765.2_C_virginica-3.0_genomic_UPDATE.gtf \
-  -o /projectnb/davieslab/bove/oysters/count_files/CVIR_featurecounts.txt \
+  -o /projectnb/davieslab/bove/oysters/count_files/CVIR_featurecounts_masked.txt \
   /projectnb/davieslab/bove/oysters/bam_files/*bam
 
 
 
 # Now check that it looks okay (the first few columns will look a bit funky, but we will remove them!)
-less /projectnb/davieslab/bove/oysters/count_files/CVIR_featurecounts.txt
+less /projectnb/davieslab/bove/oysters/count_files/CVIR_featurecounts_masked.txt
 
 
 
 ## Done! Just tidying up the 
 # shorten the column name to sample name only
-sed 's/.Aligned.sortedByCoord.out.bam//g' CVIR_featurecounts.txt>CVIR_featurecounts2.txt
-sed 's:/projectnb/davieslab/bove/oysters/bam_files/::g' CVIR_featurecounts2.txt>CVIR_featurecounts_22Jun22.txt
+sed 's/.Aligned.sortedByCoord.out.bam//g' CVIR_featurecounts_masked.txt>CVIR_featurecounts_masked2.txt
+sed 's:/projectnb/davieslab/bove/oysters/bam_files/::g' CVIR_featurecounts_masked2.txt>CVIR_featurecounts_23Sep22.txt
 
 # remove the first line (it is not necessary)
-sed -i '1d' CVIR_featurecounts_22Jun22.txt 
+sed -i '1d' CVIR_featurecounts_23Sep22.txt 
 
-# remove 
-awk '{print $1,$2,$3,$4,$5,$7}' file
+
 
 
 #------------------------------
 ## All done!
 
 # scp CVIR_featurecounts_22Jun22.txt file to your computer
-scp bovec@scc1.bu.edu:/projectnb/davieslab/bove/oysters/count_files/CVIR_featurecounts_22Jun22.txt /Users/Colleen/Dropbox/BU/DaviesLab/Oysters/SCC_pipeline_oyster
+scp bovec@scc1.bu.edu:/projectnb/davieslab/bove/oysters/count_files/CVIR_featurecounts_23Sep22.txt /Users/Colleen/Dropbox/BU/DaviesLab/Oysters/SCC_pipeline_oyster
 
 
 
@@ -470,5 +477,3 @@ scp bovec@scc1.bu.edu:/projectnb/davieslab/bove/oysters/count_files/CVIR_feature
 ref_annot_prot.tab # gene ID to GO annotation ID
 ref_annot.txt # this is the gene ID to the full gene name
 annotations.txt # GO annotation ID to GO terms
-
-
