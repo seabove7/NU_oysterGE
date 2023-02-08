@@ -1426,7 +1426,7 @@ mergedMEs <- merge$newMEs
 
 ```
 
-```{r merged dendrogram, message=FALSE, warning=FALSE, comment=FALSE}
+```{r merged dendrogram, message=FALSE, warning=FALSE, comment=FALSE, fig.height=10}
 
 # plotting the fabulous ridiculogram
 pdf(file = "WGCNA/WGCNA_figures/ClusterDendrogram.pdf", height = 4.5, width = 8.5)
