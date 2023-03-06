@@ -209,11 +209,11 @@ After viewing the size factors, it appears that we have 5 samples with really lo
 keep <- rowSums(counts(counts_SF)) >= 3
 counts_filter <- counts[keep,]
 nrow_filter <- nrow(counts_filter)
-# the updated number of rows (24384)
+# the updated number of rows (21957)
 
 
 ## outliers removed based on array quality metrics
-outs <- c(14, 16, 18, 23, 24) # pull these outliers
+outs <- c(14, 16, 18, 23, 24, 28) # pull these outliers (19355 = #14, 19372 = #16, 19382 = #18, 19496 = #23, 19505 = #24, 19611	 = #28)
 filter_counts_out <- counts_filter[,-outs]
 expDesign <- expDesign[-outs,]
 
@@ -284,7 +284,7 @@ norm_counts <- counts(dds, normalized = TRUE)
 ```{r GE PCA, include=FALSE}
 
 ## calculate PCs based on the vsd transformed GE
-pcaData <- plotPCA_allPCs(vsd, intgroup = c("treat", "pCO2", "infect"), returnData = TRUE) # will provide all PCs
+pcaData <- plotPCA_allPCs(vsd, intgroup = c("treat", "pCO2", "infect"), ntop = 100, returnData = TRUE) # will provide all PCs
 #head(pcaData)
 
 # extract variance for all PCs
@@ -296,8 +296,8 @@ percentVar <- round((100 * attr(pcaData, "percentVar")), 2)
 ```{r PERMANOVA}
 
 # run the PERMANOVA with euclidean distances and 1500 iterations
-#head(pcaData[6:31])
-GE_pca <- adonis2(pcaData[6:31] ~ pcaData$infect * pcaData$pCO2, method = 'eu', permutations = 1500)
+#head(pcaData[6:30])
+GE_pca <- adonis2(pcaData[6:30] ~ pcaData$pCO2 + pcaData$infect, method = 'eu', permutations = 1500)
 GE_pca
 
 ```
@@ -318,6 +318,7 @@ pca_plot <- ggplot(pcaData, aes(x = PC1, y = PC2, color = treat)) +
   scale_color_manual(name = "Treatment", values=color_scheme, labels = c("No sponge, pCO2 2800", "No sponge, pCO2 400", "Sponge, pCO2 2800", "Sponge, pCO2 400")) +
   ylab(paste0("PC2 (", percentVar[2], "%)")) +
   #scale_colour_brewer(palette = 2, type = "qual") +
+  ggtitle("Top 100 genes") +
   theme_classic()
 
 pca_plot
@@ -356,21 +357,21 @@ res_con_sponge <- results(dds, contrast = c("treat", "S_400", "N_400"), alpha = 
 res_con_pco2 <- results(dds, contrast = c("treat", "N_2800", "N_400"), alpha = 0.05)
 res_trt <- results(dds, contrast = c("treat", "S_2800", "N_400"), alpha = 0.05)
 
-#new
-res_trt_pco2 <- results(dds, contrast = c("treat", "S_2800", "S_400"), alpha = 0.05)
-res_stn_pco2 <- results(dds, contrast = c("treat", "S_400", "N_2800"), alpha = 0.05)
-res_shn_pco2 <- results(dds, contrast = c("treat", "S_2800", "N_2800"), alpha = 0.05)
+##new
+#res_trt_pco2 <- results(dds, contrast = c("treat", "S_2800", "S_400"), alpha = 0.05)
+#res_stn_pco2 <- results(dds, contrast = c("treat", "S_400", "N_2800"), alpha = 0.05)
+#res_shn_pco2 <- results(dds, contrast = c("treat", "S_2800", "N_2800"), alpha = 0.05)
 
 ```
 
 ```{r results summary, echo = TRUE}
 
-summary(res_con_sponge)
-summary(res_con_pco2)
-summary(res_trt)
-summary(res_trt_pco2)
-summary(res_stn_pco2)
-summary(res_shn_pco2)
+summary(res_con_sponge) # when sponge is infected @ control pCO2
+summary(res_con_pco2) # no sponge, but increasing pCO2
+summary(res_trt) # higher pCO2 and sponge infection
+#summary(res_trt_pco2)
+#summary(res_stn_pco2)
+#summary(res_shn_pco2)
 
 ```
 
@@ -392,28 +393,32 @@ downTrt_S <- row.names(res_trt[res_trt$padj < 0.05 & !is.na(res_trt$padj) & res_
 upTrt_S <- row.names(res_trt[res_trt$padj < 0.05 & !is.na(res_trt$padj) & res_trt$log2FoldChange > 0, ])
 allTrt_S <- row.names(res_trt[res_trt$padj < 0.05 & !is.na(res_trt$padj), ]) 
 
-#sponge high vs sponge low
-downtrtS <- row.names(res_trt_pco2[res_trt_pco2$padj < 0.05 & !is.na(res_trt_pco2$padj) & res_trt$log2FoldChange < 0, ])
-uptrtS <- row.names(res_trt_pco2[res_trt_pco2$padj < 0.05 & !is.na(res_trt_pco2$padj) & res_trt$log2FoldChange > 0, ])
-
-alltrtS <- row.names(res_trt_pco2[res_trt_pco2$padj < 0.05 & !is.na(res_trt_pco2$padj), ] )
-
-#sponge low vs no sponge high
-downslsh <- row.names(res_stn_pco2[res_stn_pco2$padj < 0.05 & !is.na(res_stn_pco2$padj) & res_trt$log2FoldChange < 0, ])
-upslsh <- row.names(res_stn_pco2[res_stn_pco2$padj < 0.05 & !is.na(res_stn_pco2$padj) & res_trt$log2FoldChange > 0, ])
-
-allslsh <- row.names(res_stn_pco2[res_stn_pco2$padj < 0.05 & !is.na(res_stn_pco2$padj), ])
-
-#sponge high vs no sponge high
-downsshn <- row.names(res_shn_pco2[res_shn_pco2$padj < 0.05 & !is.na(res_shn_pco2$padj) & res_trt$log2FoldChange < 0, ])
-upsshn <- row.names(res_shn_pco2[res_shn_pco2$padj < 0.05 & !is.na(res_shn_pco2$padj) & res_trt$log2FoldChange > 0, ])
-
-allsshn <- row.names(res_shn_pco2[res_shn_pco2$padj < 0.05 & !is.na(res_shn_pco2$padj), ])
+# #sponge high vs sponge low
+# downtrtS <- row.names(res_trt_pco2[res_trt_pco2$padj < 0.05 & !is.na(res_trt_pco2$padj) & res_trt$log2FoldChange < 0, ])
+# uptrtS <- row.names(res_trt_pco2[res_trt_pco2$padj < 0.05 & !is.na(res_trt_pco2$padj) & res_trt$log2FoldChange > 0, ])
+# 
+# alltrtS <- row.names(res_trt_pco2[res_trt_pco2$padj < 0.05 & !is.na(res_trt_pco2$padj), ] )
+# 
+# #sponge low vs no sponge high
+# downslsh <- row.names(res_stn_pco2[res_stn_pco2$padj < 0.05 & !is.na(res_stn_pco2$padj) & res_trt$log2FoldChange < 0, ])
+# upslsh <- row.names(res_stn_pco2[res_stn_pco2$padj < 0.05 & !is.na(res_stn_pco2$padj) & res_trt$log2FoldChange > 0, ])
+# 
+# allslsh <- row.names(res_stn_pco2[res_stn_pco2$padj < 0.05 & !is.na(res_stn_pco2$padj), ])
+# 
+# #sponge high vs no sponge high
+# downsshn <- row.names(res_shn_pco2[res_shn_pco2$padj < 0.05 & !is.na(res_shn_pco2$padj) & res_trt$log2FoldChange < 0, ])
+# upsshn <- row.names(res_shn_pco2[res_shn_pco2$padj < 0.05 & !is.na(res_shn_pco2$padj) & res_trt$log2FoldChange > 0, ])
+# 
+# allsshn <- row.names(res_shn_pco2[res_shn_pco2$padj < 0.05 & !is.na(res_shn_pco2$padj), ])
 
 ## Compile DEG dataframe
-DEG_bar <- data.frame("treat" = c(toString(unlist(str_split(res_con_sponge@elementMetadata@listData[["description"]][2], " "))[c(8,6)]), toString(unlist(str_split(res_con_pco2@elementMetadata@listData[["description"]][2], " "))[c(8,6)]), toString(unlist(str_split(res_trt@elementMetadata@listData[["description"]][2], " "))[c(8,6)]), toString(unlist(str_split(res_trt_pco2@elementMetadata@listData[["description"]][2], " "))[c(8,6)]), toString(unlist(str_split(res_stn_pco2@elementMetadata@listData[["description"]][2], " "))[c(8,6)]), toString(unlist(str_split(res_shn_pco2@elementMetadata@listData[["description"]][2], " "))[c(8,6)])), 
-                "up" = c(length(upCon_S), length(upTrt_N), length(upTrt_S), length(uptrtS), length(upslsh), length(upsshn)), 
-                "down" = c((length(downCon_S) * -1), (length(downTrt_N) * -1), (length(downTrt_S) * -1), (length(downtrtS) * -1), (length(downslsh) * -1), (length(downsshn) * -1)))
+DEG_bar <- data.frame("treat" = c(toString(unlist(str_split(res_con_sponge@elementMetadata@listData[["description"]][2], " "))[c(8,6)]), toString(unlist(str_split(res_con_pco2@elementMetadata@listData[["description"]][2], " "))[c(8,6)]), toString(unlist(str_split(res_trt@elementMetadata@listData[["description"]][2], " "))[c(8,6)])), 
+                "up" = c(length(upCon_S), length(upTrt_N), length(upTrt_S)), 
+                "down" = c((length(downCon_S) * -1), (length(downTrt_N) * -1), (length(downTrt_S) * -1)))
+
+#DEG_bar <- data.frame("treat" = c(toString(unlist(str_split(res_con_sponge@elementMetadata@listData[["description"]][2], " "))[c(8,6)]), #toString(unlist(str_split(res_con_pco2@elementMetadata@listData[["description"]][2], " "))[c(8,6)]), #toString(unlist(str_split(res_trt@elementMetadata@listData[["description"]][2], " "))[c(8,6)]), #toString(unlist(str_split(res_trt_pco2@elementMetadata@listData[["description"]][2], " "))[c(8,6)]), #toString(unlist(str_split(res_stn_pco2@elementMetadata@listData[["description"]][2], " "))[c(8,6)]), #toString(unlist(str_split(res_shn_pco2@elementMetadata@listData[["description"]][2], " "))[c(8,6)])), 
+#                "up" = c(length(upCon_S), length(upTrt_N), length(upTrt_S), length(uptrtS), length(upslsh), length(upsshn)), 
+#                "down" = c((length(downCon_S) * -1), (length(downTrt_N) * -1), (length(downTrt_S) * -1), (length(downtrtS) * -1), (length(downslsh) * -1), (length(downsshn) * #-1)))
 
 DEG_bar <- gather(DEG_bar, reg, genes, up:down)
 
@@ -451,22 +456,29 @@ Figure: Bar plot of significant DEGs. The y axis denotes how many genes there ar
 
 ### Paired Venns of DEGs
 
-```{r paired Venns}
+Colleen is dropping this since we don't have shared genes for now!
 
-## Comparing up NS_400 vs S_2800 and up S_2800 vs NS_2800
-venn_loci_df <- list("NS_400 vs S_2800" = upTrt_S, "S_2800 vs NS_2800" = upsshn)
+```{r paired Venns, eval=FALSE, include=FALSE}
 
-## Comparing up NS_400 vs S_2800 and up S_2800 vs NS_2800
-venn_loci_up <- list("NS_400 vs S_2800" = upTrt_S, "S_2800 vs S_400" = uptrtS)
+## Comparing up NS_400 vs S_2800 and up NS_400 vs S_400
+venn_loci_df <- list("NS_400 vs S_2800" = upTrt_S, "NS_400 vs S_400" = upTrt_N)
 
-## Comparing down NS_400 vs S_2800 and up S_2800 vs NS_2800
-venn_loci_down <- list("NS_400 vs S_2800" = downTrt_S, "S_2800 vs NS_2800" = downsshn)
 
-## Comparing down NS_400 vs S_2800 and down S_2800 vs S_400
-venn_loci2_down <- list("NS_400 vs S_2800" = downTrt_S, "S_2800 vs S_400" = downtrtS)
 
-## Comparing between all three
-venn_all <- list("Ctrl vs Sponge, pCO2 2800" = allTrt_S, "Ctrl vs No Sponge, pCO2 2800" = allTrt_N, "Ctrl vs Sponge, pCO2 400" = allCon_S)
+### Comparing up NS_400 vs S_2800 and up S_2800 vs NS_2800
+#venn_loci_df <- list("NS_400 vs S_2800" = upTrt_S, "S_2800 vs NS_2800" = upsshn)
+#
+### Comparing up NS_400 vs S_2800 and up S_2800 vs NS_2800
+#venn_loci_up <- list("NS_400 vs S_2800" = upTrt_S, "S_2800 vs S_400" = uptrtS)
+#
+### Comparing down NS_400 vs S_2800 and up S_2800 vs NS_2800
+#venn_loci_down <- list("NS_400 vs S_2800" = downTrt_S, "S_2800 vs NS_2800" = downsshn)
+#
+### Comparing down NS_400 vs S_2800 and down S_2800 vs S_400
+#venn_loci2_down <- list("NS_400 vs S_2800" = downTrt_S, "S_2800 vs S_400" = downtrtS)
+#
+### Comparing between all three
+#venn_all <- list("Ctrl vs Sponge, pCO2 2800" = allTrt_S, "Ctrl vs No Sponge, pCO2 2800" = allTrt_N, "Ctrl vs Sponge, pCO2 400" = allCon_S)
 
 ## Plot the seperate venn diagrams
 ven1 <- ggvenn(venn_loci_df, 
@@ -520,9 +532,9 @@ Figure 4: Venn diagrams depicting number of shared significantly up-regulated / 
 
 ### Full Venns of DEGs
 
-Need to add all treatments with DEGs to the below code (ANGELA)
+Colleen dropped this as well
 
-```{r full venns}
+```{r full venns, eval=FALSE, include=FALSE}
 
 ## Venn of up DEGs
 venn_up <- list("NS_400 vs S_2800" = upTrt_S, "S_2800 vs NS_2800" = uptrtS, "S_2800 vs NS_2800" = upsshn, "N_2800 vs S_400" = upslsh)
@@ -579,8 +591,8 @@ mycolors <- c("#0571b0", "#ca0020", "#f4a582")
 
 
 ## To run the function, enter the following objects:
-ge_plast_all <-  PCAplast(pca = pcaData[6:31], # the PCA dataframe containing the PCA eigenvalues
-                      data = pcaData[-6:-31], # the condition/treatment data corresponding to samples
+ge_plast_all <-  PCAplast(pca = pcaData[6:30], # the PCA dataframe containing the PCA eigenvalues
+                      data = pcaData[-6:-30], # the condition/treatment data corresponding to samples
                       num_pca =  "all", # the number of PCAs to include in analysis (default is 'all', but you can specify another number with a minimum of 2 PCAs)
                       control_col = "treat", # what the 'treatment' column is called
                       control_lvl = "N_400") # control level of the treatment. If blank, a control mean per level is assumed
@@ -595,8 +607,8 @@ pca_all_plot <- ggplot(data = ge_plast_all, aes(x = treat, y = dist, colour = tr
   ggtitle("B)")
 
 
-ge_plast_2 <-  PCAplast(pca = pcaData[6:31], # the PCA dataframe containing the PCA eigenvalues
-                      data = pcaData[-6:-31], # the condition/treatment data corresponding to samples
+ge_plast_2 <-  PCAplast(pca = pcaData[6:30], # the PCA dataframe containing the PCA eigenvalues
+                      data = pcaData[-6:-30], # the condition/treatment data corresponding to samples
                       num_pca =  "2", # the number of PCAs to include in analysis (default is 'all', but you can specify another number with a minimum of 2 PCAs)
                       control_col = "treat", # what the 'treatment' column is called
                       control_lvl = "N_400") # control level of the treatment. If blank, a control mean per level is assumed
@@ -609,6 +621,7 @@ pca2_plot <- ggplot(data = ge_plast_2, aes(x = treat, y = dist, colour = treat, 
   geom_boxplot(alpha = 0.2) +
   xlab("Treatment") +
   ggtitle("A)")
+
 ```
 
 <br/>
@@ -939,40 +952,6 @@ for (f in files) {
 ```
 
 
-### Example of a heatmap for a GO term
-
-Trying Dan's way...
-```{r}
-
-gene <- read.delim("GO_MWU/GO_scripts/CVIR_iso2gene.tab", sep = "\t", header = FALSE) 
-
-iso2go <- read_tsv("GO_MWU/GO_scripts/CVIR_iso2go.tab", col_names = FALSE) %>% 
-  dplyr::rename("gene" = "X1", "GO_id" = "X2")
-
-
-sig_trt_DEGs <- data.frame(loci = res_trt@rownames, res_trt@listData) %>%
-  left_join(seq2iso, by = c("loci" = "V1")) %>% 
-  dplyr::rename("gene" = "V2") %>% 
-  left_join(iso2go, by = c("gene" = "gene")) %>% 
-  left_join(data.frame(loci = rownames(assay(rlog)), assay(rlog))) %>%
-  left_join(gene,  by = c("loci" = "V1")) %>% 
-  filter(padj < 0.1) %>% 
-  distinct(loci, .keep_all = TRUE) %>% 
-  column_to_rownames(var = "V2")
-
-
-
-library(gplots)
-
-# plot heatmap
-heatmap.2(as.matrix(sig_trt_DEGs[10:35]), scale = "row",
-          #dendrogram = "both",
-          trace = "none",
-          #main = "GO:0016459 myosin complex",
-          margin = c(5,15))
-
-```
-
 ### All the other heatmaps!
 
 ```{r}
@@ -1137,7 +1116,7 @@ library(DEGreport)
 
 # treatment DEGs
 col= colorRampPalette(rev(c('#e66101', "#fdb863", "#fdcb8e", "#fce1c0" ,"white", '#5e3c99')),bias=0.8)(30)
-pheatmapfig <- pheatmap(heat_df, color = col, cluster_cols = TRUE, clustering_distance_rows = "correlation", show_colnames = TRUE, show_rownames = TRUE, annotation_col = df1, annotation_colors = ann_colors, fontsize = 30)  
+pheatmapfig <- pheatmap(heat_df, color = col, cluster_cols = TRUE, clustering_distance_rows = "correlation", show_colnames = TRUE, show_rownames = TRUE, annotation_col = df1, annotation_colors = ann_colors, fontsize = 10)  
 pheatmapfig
 #ggsave("Figures/Pheatmap.png", height = 7, width = 14)
 
@@ -1155,7 +1134,7 @@ pheatmapfig
 
 ## for WCGNA: removing all genes with counts <5 in more than 90 % of samples
 counts4wgcna <- filter_counts_out[apply(filter_counts_out, 1, function(x) sum(x < 5)) < ncol(filter_counts_out) * 0.9,]
-nrow(counts4wgcna) # 12801 genes (originally had 24384 genes)
+nrow(counts4wgcna) # 13034 genes (originally had 21957 genes)
 
 # unhash if you want to save this data as a csv
 #write.csv(counts4wgcna, file = "WGCNA/WGCNA_data/wgcna_counts.csv")
@@ -1173,7 +1152,7 @@ colnames(vsd) <- snames
 ## more reduced stabilized dataset for WGCNA
 wg <- DESeqDataSetFromMatrix(countData = counts4wgcna,
                              colData = expDesign,
-                             design = ~ infect + pCO2)
+                             design = ~ pCO2 + infect)
 
 vsdWG <- assay(varianceStabilizingTransformation(wg))
 #head(vsdWG, 3)
@@ -1205,8 +1184,8 @@ allowWGCNAThreads()
 lnames <- load("WGCNA/WGCNA_data/wgcna_data.RData")
 lnames # "vsdWG"  "design" # log-transformed variance-stabilized gene expression, and table of experimental conditions
 datt <- t(vsdWG)
-#ncol(datt) # number of columns (12801)
-#nrow(datt) # number of rows (26)
+#ncol(datt) # number of columns (13034)
+#nrow(datt) # number of rows (25)
 
 ```
 
@@ -1215,8 +1194,13 @@ datt <- t(vsdWG)
 ## read in the phenotype data from Elise
 phys_all_df <- read.csv("Data/Oyster_AllPhysData.csv", header = TRUE)
 
+# No longer including some of these
+# phys_subset_df <- phys_all_df %>% 
+#   select(ID, TpCO2:Infect, BoredStart, BW2_L, BW2_W, BW2_Wt, AbsChDay02_DensCorr, CalcDay, CalcDay60, EPFpHTotal:EPFCalSat, SW, WW, DW, CI_SW, BW2_DW) %>% 
+#   subset(ID %in% as.integer(as.character(expDesign$Sample_ID)))
+
 phys_subset_df <- phys_all_df %>% 
-  select(ID, TpCO2:Infect, BoredStart, BW0_L, BW0_W, CalcDay, EPFpHTotal:EPFCalSat, SW, WW, DW, CI_SW) %>% 
+  select(ID, TpCO2:Infect, BoredStart, BW2_L, BW2_W, BW2_Wt, CalcDay, EPFpHTotal:EPFCO3, WW, DW, BW2_DW) %>% 
   subset(ID %in% as.integer(as.character(expDesign$Sample_ID)))
 
 write.csv(phys_subset_df, "Data/Oyster_phys_WGCNA.csv", row.names = FALSE)
@@ -1232,7 +1216,7 @@ phys_traits <- read.csv("Data/Oyster_phys_WGCNA.csv", header = TRUE) %>%
 
 expDesign <- expDesign %>% 
   select(-treat) %>%
-  left_join(phys_traits[c(1, 5:8, 16:17)], by = c("Sample_ID" = "ID"))
+  left_join(phys_traits, by = c("Sample_ID" = "ID"))
 
 
 ## assembling matrix of QUANTITATIVE traits for WGCNA 
@@ -1249,7 +1233,7 @@ expDesign <- expDesign %>%
 # combine the quantitative with the qualitative for trait matrix
 #traits <- cbind(`High pCO2`, `Infected`, `N_400`, `S_400`, `N_2800`, `S_2800`, expDesign[6:11])
 #without treat
-traits <- cbind(`High pCO2`, `Infected`, expDesign[5:10])
+traits <- cbind(`High pCO2`, `Infected`, expDesign[8:20])
 #colnames(traits) <- c("288_28", "311_31", "405_31", "447_28", "673_28", "701_31", "3285_28", "3300_31", "offshore", "density", "protein", "chlorophyll", "colour_intensity", "calcification", "carbohydrate", "lipid", "chlorophylla_cell", "percent_C")
 
 ```
@@ -1270,7 +1254,7 @@ NumberMissingByArray <- apply(is.na(data.frame(datt)), 1, sum)
 barplot(meanExpressionByArray,
         xlab = "Sample", ylab = "Mean expression",
         main ="Mean expression across samples",
-        names.arg = c(1:26), cex.names = 0.7)
+        names.arg = c(1:25), cex.names = 0.7)
 # look for any obvious deviations in expression across samples
 
 ```
@@ -1302,7 +1286,7 @@ plotDendroAndColors(sampleTree,groupLabels = names(datColors), colors = datColor
 remove_samples <- Z.k < thresholdZ.k | is.na(Z.k)
 datt <- datt[!remove_samples,]
 traits <- traits[!remove_samples,]
-# 1 outlier detected/removed as of 12 July 2022 (sample ID: 19611)
+# 1 outlier detected/removed as of 12 July 2022 (sample ID: 19549)
 
 
 ## save updated WGCNA data/trait matrix with outliers removed
@@ -1313,7 +1297,7 @@ One sample (19611) was flagged as an outlier and removed.
 ```{r threshold selection and plot, fig.height=5, fig.width=12}
 
 ## This loads the updated WGCNA data from above with the two outlier samples removed
-#load("WGCNA/WGCNA_data/wgcnaData_outlier.RData")
+load("WGCNA/WGCNA_data/wgcnaData_outlier.RData")
 
 
 # Try different betas ("soft threshold") - power factor for calling connections between genes
@@ -1351,10 +1335,10 @@ text(sft$fitIndices[,1], sft$fitIndices[,5], labels=powers, cex=cex1,col="red")
 
 ```{r create dendrogram, message=FALSE, warning=FALSE, comment = FALSE, include = FALSE, eval = FALSE}
 
-## pick the power that corresponds with a SFT.R.sq value at or above 0.90 (9 as of 12 July 2022)
+## pick the power that corresponds with a SFT.R.sq value at or above 0.90 (9 as of 12 July 2022) --> switched to 11 on 06 March 2023
 
 # run from the line below to the save command
-s.th <- 9 # specify according to previous section
+s.th <- 11 # specify according to previous section
 adjacency <- adjacency(datt, power = s.th, type = "signed");
 TOM <- TOMsimilarity(adjacency, TOMType = "signed");
 dissTOM <- (1 - TOM)
@@ -1394,7 +1378,7 @@ save(dynamicMods, dynamicColors, MEs, METree, geneTree, file = "WGCNA/WGCNA_data
 ```{r clustering tree, message=FALSE, warning=FALSE}
 
 ## s2t the cutoff
-MEDissThres <- 0.4 # using 0.XX as of 12 July 2022 # in the first pass, set this to 0 - no merging (we want to see the module-traits heatmap first, then decide which modules are telling us the same story and better be merged)
+MEDissThres <- 0.51 # using 0.4 as of 12 July 2022 # in the first pass, set this to 0 - no merging (we want to see the module-traits heatmap first, then decide which modules are telling us the same story and better be merged)
 
 mm <- load('WGCNA/WGCNA_data/1stPassModules.RData')
 lnames <- load('WGCNA/WGCNA_data/wgcnaData_outlier.RData')
